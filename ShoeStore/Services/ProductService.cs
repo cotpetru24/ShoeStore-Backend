@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Product;
 
@@ -7,11 +8,13 @@ namespace ShoeStore.Services
     public class ProductService
     {
         private readonly ShoeStoreContext _context;
+        private readonly IMapper _mapper;
 
 
-        public ProductService(ShoeStoreContext injectedContext)
+        public ProductService(ShoeStoreContext injectedContext, IMapper injectedMapper)
         {
             _context = injectedContext;
+            _mapper = injectedMapper;
         }
 
 
@@ -19,9 +22,9 @@ namespace ShoeStore.Services
         public async Task<List<ProductDto>> GetProductsAsync(GetProductsRequest request)
         {
 
-            IQueryable<Product> products = _context.Products
-                .Include(p=>p.BrandId)
-                .Include(p=>p.Audience);
+            IQueryable<Product> products = _context.Products;
+                //.Include(p => p.Brand)
+                //.Include(p => p.Audience);
 
 
             if (!string.IsNullOrEmpty(request.Category))
@@ -39,9 +42,12 @@ namespace ShoeStore.Services
             if (!string.IsNullOrEmpty(request.Search))
                 products = products.Where(p => p.Name.Contains(request.Search));
 
-            var result = await products
-                .Select(pDto => new ProductDto())
-                .ToListAsync();
+            //var result = await products
+            //    .Select(pDto => new ProductDto())
+            //    .ToListAsync();
+            var productEntities = await products.ToListAsync();
+
+            var result = _mapper.Map<List<ProductDto>>(productEntities);
 
             //to add here pagination
 
