@@ -44,4 +44,8 @@ public partial class Product
     public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
 
     public virtual ICollection<ProductSize> ProductSizes { get; set; } = new List<ProductSize>();
+
+
+    // this as a FK in the db
+    public virtual ICollection<Audience> Audiences { get; set; } = new List<Audience>();
 }

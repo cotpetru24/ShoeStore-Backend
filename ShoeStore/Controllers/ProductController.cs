@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Product;
+using ShoeStore.Services;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ShoeStore.Controllers
 {
@@ -8,24 +11,26 @@ namespace ShoeStore.Controllers
     [Route("api/[controller]")]
     public class ProductController : ControllerBase
     {
-        private readonly ShoeStoreContext _context;
+        private readonly ProductService _service;
 
-        public ProductController(ShoeStoreContext injectedContext)
+
+        public ProductController(ProductService injectedService)
         {
-            _context = injectedContext;
+            _service = injectedService;
         }
 
 
-
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<Product>))]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<ProductDto>))]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> GetCustomersAsync(int page = 1, int pageSize = 30, string? country = null)
+        public async Task<IActionResult> GetProductsAsync([FromQuery] GetProductsRequest request)
         {
             try
             {
-                IEnumerable<Product> customers = await _context.Products.ToListAsync();
-                return Ok(customers);
+                var products = await _service.GetProductsAsync(request);
+
+                //here return create and return product DTO
+                return Ok(products);
             }
             catch
             {
