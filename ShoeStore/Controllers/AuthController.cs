@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Services;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Dto.Auth;
+using ShoeStore.Services;
 
 namespace ShoeStore.Controllers
 {
@@ -72,3 +73,99 @@ namespace ShoeStore.Controllers
 
     }
 }
+
+
+
+
+//public class RolesController : Controller
+//{
+//    private string _adminRole = "Administrators";
+
+//    private string _userEmail = "admin@admin.com";
+
+//    private readonly RoleManager<IdentityRole> _roleManager;
+
+//    private readonly UserManager<IdentityUser> _userManager;
+
+
+//    public RolesController(RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
+//    {
+//        this._roleManager = roleManager;
+//        this._userManager = userManager;
+//    }
+
+//    public async Task<IActionResult> Index()
+//    {
+//        if (!(await _roleManager.RoleExistsAsync(_adminRole)))
+//        {
+//            await _roleManager.CreateAsync(new IdentityRole(_adminRole));
+//        }
+
+//        IdentityUser user = await _userManager.FindByEmailAsync(_userEmail);
+
+//        if (user == null)
+//        {
+//            user = new IdentityUser()
+//            {
+//                UserName = _userEmail,
+//                Email = _userEmail,
+//                //EmailConfirmed = true
+//            };
+
+//            IdentityResult result = await _userManager.CreateAsync(user, "Pa$$w0rd");
+
+//            if (result.Succeeded)
+//            {
+//                Console.WriteLine($"User {user.UserName} created successfully.");
+//            }
+
+//            else
+//            {
+//                foreach (IdentityError error in result.Errors)
+//                {
+//                    Console.WriteLine(error.Description);
+//                }
+//            }
+//        }
+
+//        if (!user.EmailConfirmed)
+//        {
+//            string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+//            IdentityResult result = await _userManager.ConfirmEmailAsync(user, token);
+
+//            if (result.Succeeded)
+//            {
+//                Console.WriteLine($"Email for user {user.UserName} confirmed successfully.");
+//            }
+//            else
+//            {
+//                foreach (IdentityError error in result.Errors)
+//                {
+//                    Console.WriteLine(error.Description);
+//                }
+//            }
+//        }
+
+//        if (!(await _userManager.IsInRoleAsync(user, _adminRole)))
+//        {
+//            IdentityResult result = await _userManager.AddToRoleAsync(user, _adminRole);
+
+//            if (result.Succeeded)
+//            {
+//                Console.WriteLine($"User {user.UserName} added to role {_adminRole} successfully.");
+//            }
+//            else
+//            {
+//                foreach (IdentityError error in result.Errors)
+//                {
+//                    Console.WriteLine(error.Description);
+//                }
+//            }
+//        }
+
+
+//        return Redirect("/");
+//    }
+//}
+
