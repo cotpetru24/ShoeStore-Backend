@@ -3,6 +3,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Configuration;
 using ShoeStore.DataContext.PostgreSQL.Models;
@@ -78,6 +79,17 @@ namespace ShoeStore
 
 
             builder.Services.AddAuthorization();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("Angular", policy =>
+                {
+                    policy.WithOrigins("https://localhost:4200")
+                          .WithHeaders("Content-Type", "Authorization")
+                          .WithMethods("GET", "POST", "PUT", "DELETE");
+                    //.AllowCredentials();
+                });
+            });
 
 
 

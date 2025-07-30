@@ -22,16 +22,16 @@ namespace ShoeStore.Services
         public async Task<List<ProductDto>> GetProductsAsync(GetProductsRequest request)
         {
 
-            IQueryable<Product> products = _context.Products;
-                //.Include(p => p.Brand)
-                //.Include(p => p.Audience);
+            IQueryable<Product> products = _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Audience);
 
 
             if (!string.IsNullOrEmpty(request.Category))
-                products = products.Where(p => p.Audience.Code.ToLower() == request.Category.ToLower());
+                products = products.Where(p => p.Audience != null && EF.Functions.ILike(p.Audience.Code, request.Category));
 
             if (!string.IsNullOrEmpty(request.Brand))
-                products = products.Where(p => p.Brand.Name == request.Brand);
+                products = products.Where(p => p.Brand != null && p.Brand.Name == request.Brand);
 
             if (request.MinPrice.HasValue)
                 products = products.Where(p => p.Price >= request.MinPrice.Value);
@@ -42,14 +42,19 @@ namespace ShoeStore.Services
             if (!string.IsNullOrEmpty(request.Search))
                 products = products.Where(p => p.Name.Contains(request.Search));
 
-            //var result = await products
-            //    .Select(pDto => new ProductDto())
-            //    .ToListAsync();
+
+            products = products.OrderByDescending(p => p.Brand.Name);
+
+            request.Page = request.Page < 1 ? 1 : request.Page;
+            request.PageSize = request.PageSize < 1 ? 30 : request.PageSize;
+
+            products = products
+                .Skip((request.Page - 1) * request.PageSize)
+                .Take(request.PageSize);
+
             var productEntities = await products.ToListAsync();
 
             var result = _mapper.Map<List<ProductDto>>(productEntities);
-
-            //to add here pagination
 
             return result;
 
