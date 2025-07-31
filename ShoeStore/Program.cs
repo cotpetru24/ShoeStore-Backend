@@ -40,11 +40,13 @@ namespace ShoeStore
                     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
                 });
             }
+            var connStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+            builder.Services.AddHealthChecks().AddNpgSql(connStr, name: "postgres");
 
 
 
 
-                builder.Services.AddAutoMapper(cfg =>
+            builder.Services.AddAutoMapper(cfg =>
                 {
                     cfg.AddMaps(typeof(MappingProfile).Assembly);
                 });
@@ -86,8 +88,8 @@ namespace ShoeStore
                 {
                     policy.WithOrigins("https://localhost:4200")
                           .WithHeaders("Content-Type", "Authorization")
-                          .WithMethods("GET", "POST", "PUT", "DELETE");
-                    //.AllowCredentials();
+                          .WithMethods("GET", "POST", "PUT", "DELETE")
+                          .AllowCredentials();
                 });
             });
 
@@ -114,6 +116,8 @@ namespace ShoeStore
 
 
             app.MapControllers();
+
+            app.MapHealthChecks("/health");
 
             app.Run();
         }
