@@ -84,9 +84,9 @@ namespace ShoeStore
 
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("Angular", policy =>
+                options.AddPolicy("FrontEnd", policy =>
                 {
-                    policy.WithOrigins("https://localhost:4200")
+                    policy.WithOrigins("http://localhost:4200")
                           .WithHeaders("Content-Type", "Authorization")
                           .WithMethods("GET", "POST", "PUT", "DELETE")
                           .AllowCredentials();
@@ -110,6 +110,7 @@ namespace ShoeStore
             }
 
             app.UseHttpsRedirection();
+            app.UseCors("FrontEnd");
 
             app.UseAuthentication();
             app.UseAuthorization();
