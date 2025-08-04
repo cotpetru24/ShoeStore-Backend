@@ -10,12 +10,13 @@ using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Mappings;
 using ShoeStore.Services;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ShoeStore
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +53,7 @@ namespace ShoeStore
                 });
 
             builder.Services.AddScoped<ProductService, ProductService>();
+            builder.Services.AddScoped<AuthService, AuthService>();
 
             builder.Services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<ShoeStoreContext>()
@@ -101,6 +103,12 @@ namespace ShoeStore
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
+                await authService.SeedAdminAccount();
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

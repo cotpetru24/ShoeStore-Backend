@@ -39,5 +39,5 @@ public partial class Order
 
     public virtual UserAddress? ShippingAddress { get; set; }
 
-    public virtual AspNetUser? User { get; set; }
+
 }

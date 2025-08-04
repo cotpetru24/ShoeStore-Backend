@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using System;
+using System.Collections.Generic;
 
 namespace ShoeStore.DataContext.PostgreSQL.Models;
 
-public partial class ShoeStoreContext : DbContext
+public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, IdentityRole, string>
 {
     public ShoeStoreContext()
     {
@@ -14,18 +16,6 @@ public partial class ShoeStoreContext : DbContext
         : base(options)
     {
     }
-
-    public virtual DbSet<AspNetRole> AspNetRoles { get; set; }
-
-    public virtual DbSet<AspNetRoleClaim> AspNetRoleClaims { get; set; }
-
-    public virtual DbSet<AspNetUser> AspNetUsers { get; set; }
-
-    public virtual DbSet<AspNetUserClaim> AspNetUserClaims { get; set; }
-
-    public virtual DbSet<AspNetUserLogin> AspNetUserLogins { get; set; }
-
-    public virtual DbSet<AspNetUserToken> AspNetUserTokens { get; set; }
 
     public virtual DbSet<Audience> Audiences { get; set; }
 
@@ -51,70 +41,9 @@ public partial class ShoeStoreContext : DbContext
 
     public virtual DbSet<UserAddress> UserAddresses { get; set; }
 
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<AspNetRole>(entity =>
-        {
-            entity.HasIndex(e => e.NormalizedName, "RoleNameIndex").IsUnique();
-
-            entity.Property(e => e.Name).HasMaxLength(256);
-            entity.Property(e => e.NormalizedName).HasMaxLength(256);
-        });
-
-        modelBuilder.Entity<AspNetRoleClaim>(entity =>
-        {
-            entity.HasIndex(e => e.RoleId, "IX_AspNetRoleClaims_RoleId");
-
-            entity.HasOne(d => d.Role).WithMany(p => p.AspNetRoleClaims).HasForeignKey(d => d.RoleId);
-        });
-
-        modelBuilder.Entity<AspNetUser>(entity =>
-        {
-            entity.HasIndex(e => e.NormalizedEmail, "EmailIndex");
-
-            entity.HasIndex(e => e.NormalizedUserName, "UserNameIndex").IsUnique();
-
-            entity.Property(e => e.Email).HasMaxLength(256);
-            entity.Property(e => e.NormalizedEmail).HasMaxLength(256);
-            entity.Property(e => e.NormalizedUserName).HasMaxLength(256);
-            entity.Property(e => e.UserName).HasMaxLength(256);
-
-            entity.HasMany(d => d.Roles).WithMany(p => p.Users)
-                .UsingEntity<Dictionary<string, object>>(
-                    "AspNetUserRole",
-                    r => r.HasOne<AspNetRole>().WithMany().HasForeignKey("RoleId"),
-                    l => l.HasOne<AspNetUser>().WithMany().HasForeignKey("UserId"),
-                    j =>
-                    {
-                        j.HasKey("UserId", "RoleId");
-                        j.ToTable("AspNetUserRoles");
-                        j.HasIndex(new[] { "RoleId" }, "IX_AspNetUserRoles_RoleId");
-                    });
-        });
-
-        modelBuilder.Entity<AspNetUserClaim>(entity =>
-        {
-            entity.HasIndex(e => e.UserId, "IX_AspNetUserClaims_UserId");
-
-            entity.HasOne(d => d.User).WithMany(p => p.AspNetUserClaims).HasForeignKey(d => d.UserId);
-        });
-
-        modelBuilder.Entity<AspNetUserLogin>(entity =>
-        {
-            entity.HasKey(e => new { e.LoginProvider, e.ProviderKey });
-
-            entity.HasIndex(e => e.UserId, "IX_AspNetUserLogins_UserId");
-
-            entity.HasOne(d => d.User).WithMany(p => p.AspNetUserLogins).HasForeignKey(d => d.UserId);
-        });
-
-        modelBuilder.Entity<AspNetUserToken>(entity =>
-        {
-            entity.HasKey(e => new { e.UserId, e.LoginProvider, e.Name });
-
-            entity.HasOne(d => d.User).WithMany(p => p.AspNetUserTokens).HasForeignKey(d => d.UserId);
-        });
+        base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Audience>(entity =>
         {
@@ -202,9 +131,7 @@ public partial class ShoeStoreContext : DbContext
                 .HasForeignKey(d => d.ShippingAddressId)
                 .HasConstraintName("orders_shipping_address_id_fkey");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Orders)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("orders_user_id_fkey");
+
         });
 
         modelBuilder.Entity<OrderItem>(entity =>
@@ -424,9 +351,7 @@ public partial class ShoeStoreContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("product_reviews_product_id_fkey");
 
-            entity.HasOne(d => d.User).WithMany(p => p.ProductReviews)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("product_reviews_user_id_fkey");
+
         });
 
         modelBuilder.Entity<ProductSize>(entity =>
@@ -486,10 +411,7 @@ public partial class ShoeStoreContext : DbContext
             entity.Property(e => e.Street).HasColumnName("street");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.User).WithMany(p => p.UserAddresses)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("user_addresses_user_id_fkey");
+
         });
 
         OnModelCreatingPartial(modelBuilder);

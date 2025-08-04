@@ -19,5 +19,5 @@ public partial class ProductReview
 
     public virtual Product? Product { get; set; }
 
-    public virtual AspNetUser? User { get; set; }
+
 }

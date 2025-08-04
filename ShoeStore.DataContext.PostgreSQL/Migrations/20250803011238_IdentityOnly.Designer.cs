@@ -12,8 +12,8 @@ using ShoeStore.DataContext.PostgreSQL.Models;
 namespace ShoeStore.DataContext.PostgreSQL.Migrations
 {
     [DbContext(typeof(ShoeStoreContext))]
-    [Migration("20250727225752_InitialIdentitySchema")]
-    partial class InitialIdentitySchema
+    [Migration("20250803011238_IdentityOnly")]
+    partial class IdentityOnly
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
