@@ -40,6 +40,7 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
     public virtual DbSet<ProductSize> ProductSizes { get; set; }
 
     public virtual DbSet<UserAddress> UserAddresses { get; set; }
+    public virtual DbSet<UserDetail> UserDetails { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -413,6 +414,34 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
 
 
         });
+
+        modelBuilder.Entity<UserDetail>(entity =>
+        {
+            entity.ToTable("user_details");
+
+            entity.HasKey(e => e.AspNetUserId).HasName("PK_user_details");
+
+            entity.Property(e => e.AspNetUserId)
+                  .HasColumnName("asp_net_user_id")
+                  .IsRequired();
+
+            entity.Property(e => e.FirstName)
+                  .HasColumnName("first_name")
+                  .IsRequired();
+
+            entity.Property(e => e.LastName)
+                  .HasColumnName("last_name")
+                  .IsRequired();
+
+            entity.HasOne(e => e.AspNetUser)
+                  .WithOne()
+                  .HasForeignKey<UserDetail>(e => e.AspNetUserId)
+                  .HasConstraintName("FK_asp_net_user")
+                  .OnDelete(DeleteBehavior.NoAction);
+        });
+
+
+
 
         OnModelCreatingPartial(modelBuilder);
     }

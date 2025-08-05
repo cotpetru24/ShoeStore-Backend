@@ -25,22 +25,32 @@ namespace ShoeStore
 
             var isDevelopment = builder.Environment.IsDevelopment();
 
-            if (isDevelopment)
+            //if (isDevelopment)
+            //{
+            //    builder.Services.AddDbContext<ShoeStoreContext>(options =>
+            //    {
+            //        //Localhost
+            //        options.UseNpgsql(builder.Configuration.GetConnectionString("ShoeStoreConnection"));
+            //    });
+            //}
+            //else
+            //{
+                //builder.Services.AddDbContext<ShoeStoreContext>(options =>
+                //{
+                //    //Neon PostgreSQL
+                //    //options.UseNpgsql(builder.Configuration.GetConnectionString("ConnectionStrings__DefaultConnection"));
+                //    options.UseNpgsql(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection"));
+                //});
+            //}
+
+            var testConnString = "Host=localhost;Port=5432;Database=shoe_store;Username=postgres;Password=123456789;SslMode=Disable";
+
+            builder.Services.AddDbContext<ShoeStoreContext>(options =>
             {
-                builder.Services.AddDbContext<ShoeStoreContext>(options =>
-                {
-                    //Localhost
-                    options.UseNpgsql(builder.Configuration.GetConnectionString("ShoeStoreConnection"));
-                });
-            }
-            else
-            {
-                builder.Services.AddDbContext<ShoeStoreContext>(options =>
-                {
-                    //Neon PostgreSQL
-                    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-                });
-            }
+                //Local PostgreSQL
+                options.UseNpgsql(testConnString);
+            });
+
             var connStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
             builder.Services.AddHealthChecks().AddNpgSql(connStr, name: "postgres");
 

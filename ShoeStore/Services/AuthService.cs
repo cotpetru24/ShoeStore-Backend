@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Configuration;
@@ -20,6 +21,7 @@ namespace ShoeStore.Services
         private readonly JwtSettings _jwtSettings;
         private readonly IConfiguration _configuration;
         private readonly string _adminRole = "Administrator";
+        private readonly string _customerRole = "Customer";
 
         public AuthService(
             UserManager<IdentityUser> injectedUserManager,
@@ -40,6 +42,7 @@ namespace ShoeStore.Services
             if (!await _roleManager.RoleExistsAsync(_adminRole))
             {
                 await _roleManager.CreateAsync(new IdentityRole(_adminRole));
+                await _roleManager.CreateAsync(new IdentityRole(_customerRole));
 
                 IdentityUser user = new IdentityUser()
                 {
@@ -49,13 +52,17 @@ namespace ShoeStore.Services
                 };
 
                 IdentityResult result = await _userManager.CreateAsync(user, _configuration["AdminAccount:Password"]);
-               
-                await _userManager.AddClaimAsync(user, new Claim("FirstName", _adminRole));
-                await _userManager.AddClaimAsync(user, new Claim("LastName", _adminRole));
-                await _userManager.AddClaimAsync(user, new Claim("Role", _adminRole));
-
 
                 await _userManager.AddToRoleAsync(user, _adminRole);
+
+                UserDetail newUserDetails = new UserDetail()
+                {
+                    FirstName = "FirstName",
+                    LastName = "LastName",
+                    AspNetUserId =user.Id
+                };
+                await _context.UserDetails.AddAsync(newUserDetails);
+                await _context.SaveChangesAsync();
             }
         }
 
@@ -96,11 +103,6 @@ namespace ShoeStore.Services
                 throw new Exception($"Failed to create user: {errors}");
             }
 
-            await _userManager.AddClaimAsync(newUser, new Claim("FirstName", request.FirstName));
-            await _userManager.AddClaimAsync(newUser, new Claim("LastName", request.LastName));
-            await _userManager.AddClaimAsync(newUser, new Claim("Role", request.Role ?? "Customer"));
-
-
             if (!string.IsNullOrEmpty(request.Role))
             {
                 if (!await _roleManager.RoleExistsAsync(request.Role))
@@ -115,8 +117,21 @@ namespace ShoeStore.Services
 
                 await _userManager.AddToRoleAsync(newUser, request.Role);
             }
+            else 
+            {
+                await _userManager.AddToRoleAsync(newUser, _customerRole);
+            }
 
-            var roles = await _userManager.GetRolesAsync(newUser);
+            UserDetail newUserDetails = new UserDetail()
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                AspNetUserId = newUser.Id
+            };
+
+            await _context.UserDetails.AddAsync(newUserDetails);
+            await _context.SaveChangesAsync();
+
             var token = await GenerateJwtToken(newUser);
 
             return token;
@@ -129,6 +144,9 @@ namespace ShoeStore.Services
 
             var userClaims = await _userManager.GetClaimsAsync(user);
             var userRoles = await _userManager.GetRolesAsync(user);
+            var userDetails = await _context.UserDetails
+                .Where(u => u.AspNetUserId == user.Id)
+                .FirstOrDefaultAsync();
 
             var claims = new List<Claim>(userClaims);
 
@@ -141,6 +159,8 @@ namespace ShoeStore.Services
             claims.Add(new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64));
             claims.Add(new Claim("Id", user.Id));
             claims.Add(new Claim("Email", user.Email));
+            claims.Add(new Claim("FirstName", userDetails.FirstName));
+
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
