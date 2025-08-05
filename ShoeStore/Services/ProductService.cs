@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Product;
+using ShoeStore.Dto;
 
 namespace ShoeStore.Services
 {
@@ -19,7 +20,7 @@ namespace ShoeStore.Services
 
 
 
-        public async Task<List<ProductDto>> GetProductsAsync(GetProductsRequest request)
+        public async Task<GetProductsResposeDto> GetProductsAsync(GetProductsRequest request)
         {
 
             IQueryable<Product> products = _context.Products
@@ -27,8 +28,8 @@ namespace ShoeStore.Services
                 .Include(p => p.Audience);
 
 
-            if (!string.IsNullOrEmpty(request.Category))
-                products = products.Where(p => p.Audience != null && EF.Functions.ILike(p.Audience.Code, request.Category));
+            if (!string.IsNullOrEmpty(request.Gender))
+                products = products.Where(p => p.Audience != null && EF.Functions.ILike(p.Audience.Code, request.Gender));
 
             if (!string.IsNullOrEmpty(request.Brand))
                 products = products.Where(p => p.Brand != null && p.Brand.Name == request.Brand);
@@ -39,8 +40,8 @@ namespace ShoeStore.Services
             if (request.MaxPrice.HasValue)
                 products = products.Where(p => p.Price <= request.MaxPrice.Value);
 
-            if (!string.IsNullOrEmpty(request.Search))
-                products = products.Where(p => p.Name.Contains(request.Search));
+            if (!string.IsNullOrEmpty(request.SearchTerm))
+                products = products.Where(p => p.Name.Contains(request.SearchTerm));
 
 
             products = products.OrderByDescending(p => p.Brand.Name);
@@ -52,11 +53,23 @@ namespace ShoeStore.Services
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize);
 
+
+            var brands = await _context.Brands
+                .Select(b=>b.Name)
+                .OrderBy(Name=>Name)
+                .ToArrayAsync();
+
             var productEntities = await products.ToListAsync();
 
             var result = _mapper.Map<List<ProductDto>>(productEntities);
 
-            return result;
+            GetProductsResposeDto response = new GetProductsResposeDto()
+            {
+                Products = result,
+                Brands =brands
+            };
+
+            return response;
 
         }
 

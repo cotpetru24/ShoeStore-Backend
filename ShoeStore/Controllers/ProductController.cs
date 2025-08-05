@@ -21,7 +21,7 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<ProductDto>))]
+        [ProducesResponseType(200, Type = typeof(GetProductsResposeDto))]
         [ProducesResponseType(500)]
         public async Task<IActionResult> GetProductsAsync([FromQuery] GetProductsRequest request)
         {
