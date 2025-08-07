@@ -28,8 +28,8 @@ namespace ShoeStore.Services
                 .Include(p => p.Audience);
 
 
-            if (!string.IsNullOrEmpty(request.Gender))
-                products = products.Where(p => p.Audience != null && EF.Functions.ILike(p.Audience.Code, request.Gender));
+            if (!string.IsNullOrEmpty(request.Audience))
+                products = products.Where(p => p.Audience != null && EF.Functions.ILike(p.Audience.Code, request.Audience));
 
             if (!string.IsNullOrEmpty(request.Brand))
                 products = products.Where(p => p.Brand != null && p.Brand.Name == request.Brand);
@@ -41,10 +41,44 @@ namespace ShoeStore.Services
                 products = products.Where(p => p.Price <= request.MaxPrice.Value);
 
             if (!string.IsNullOrEmpty(request.SearchTerm))
-                products = products.Where(p => p.Name.Contains(request.SearchTerm));
+                products = products.Where(p =>
+                EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%") ||
+                EF.Functions.ILike(p.Brand.Name, $"%{request.SearchTerm}%"));
 
 
-            products = products.OrderByDescending(p => p.Brand.Name);
+            switch (request.SortBy)
+            {
+
+                case SortByOption.NameAsc:
+                    products = products.OrderBy(p => p.Name);
+                    break;
+
+                case SortByOption.NameDesc:
+                    products = products.OrderByDescending(p => p.Name);
+                    break;
+
+                case SortByOption.PriceAsc:
+                    products = products.OrderBy(p => p.Price);
+                    break;
+
+                case SortByOption.PriceDesc:
+                    products = products.OrderByDescending(p => p.Price);
+                    break;
+
+
+                case SortByOption.BrandAsc:
+                    products = products.OrderBy(p => p.Brand.Name);
+                    break;
+
+                case SortByOption.BrandDesc:
+                    products = products.OrderByDescending(p => p.Brand.Name);
+                    break;
+
+                default:
+                    products = products.OrderBy(p => p.Name);
+                    break;
+            }
+
 
             request.Page = request.Page < 1 ? 1 : request.Page;
             request.PageSize = request.PageSize < 1 ? 30 : request.PageSize;
@@ -55,8 +89,8 @@ namespace ShoeStore.Services
 
 
             var brands = await _context.Brands
-                .Select(b=>b.Name)
-                .OrderBy(Name=>Name)
+                .Select(b => b.Name)
+                .OrderBy(Name => Name)
                 .ToArrayAsync();
 
             var productEntities = await products.ToListAsync();
@@ -66,7 +100,7 @@ namespace ShoeStore.Services
             GetProductsResposeDto response = new GetProductsResposeDto()
             {
                 Products = result,
-                Brands =brands
+                Brands = brands
             };
 
             return response;
@@ -75,5 +109,21 @@ namespace ShoeStore.Services
 
 
 
+        public async Task<ProductDto?> GetProductByIdAsync(int productId)
+        {
+            var product = await _context.Products
+                .Where(p => p.Id == productId)
+                .Include(p => p.Brand)
+                .Include(p => p.Audience)
+                .FirstOrDefaultAsync();
+
+            if (product != null)
+            {
+                var response = _mapper.Map<ProductDto>(product);
+                return response;
+            }
+
+            return null;
+        }
     }
 }

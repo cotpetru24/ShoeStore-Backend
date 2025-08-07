@@ -10,6 +10,7 @@ using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Mappings;
 using ShoeStore.Services;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace ShoeStore
@@ -107,7 +108,11 @@ namespace ShoeStore
 
 
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(option =>
+                {
+                    option.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

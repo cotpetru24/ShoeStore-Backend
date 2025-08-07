@@ -29,8 +29,28 @@ namespace ShoeStore.Controllers
             {
                 var products = await _service.GetProductsAsync(request);
 
-                //here return create and return product DTO
                 return Ok(products);
+            }
+            catch
+            {
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet("{productId}")]
+        [ProducesResponseType(200, Type = typeof(ProductDto))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetProductByIdAsync(int productId)
+        {
+            try
+            {
+                var product = await _service.GetProductByIdAsync(productId);
+
+                if (product == null) return NotFound(productId);
+
+                return Ok(product);
             }
             catch
             {
