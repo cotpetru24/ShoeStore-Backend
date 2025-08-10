@@ -42,7 +42,7 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> GetProductByIdAsync(int productId)
+        public async Task<ActionResult<GetSingleProductResponseDto>?> GetProductByIdAsync(int productId)
         {
             try
             {

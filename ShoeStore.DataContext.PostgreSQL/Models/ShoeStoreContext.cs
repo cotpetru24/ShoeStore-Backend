@@ -40,7 +40,10 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
     public virtual DbSet<ProductSize> ProductSizes { get; set; }
 
     public virtual DbSet<UserAddress> UserAddresses { get; set; }
+
     public virtual DbSet<UserDetail> UserDetails { get; set; }
+
+    public virtual DbSet<ProductImage> ProductImages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -440,8 +443,14 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                   .OnDelete(DeleteBehavior.NoAction);
         });
 
-
-
+        modelBuilder.Entity<ProductImage>(entity =>
+        {
+            entity.ToTable("product_images");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.ImagePath).HasColumnName("image_path");
+        });
 
         OnModelCreatingPartial(modelBuilder);
     }

@@ -109,8 +109,10 @@ namespace ShoeStore.Services
 
 
 
-        public async Task<ProductDto?> GetProductByIdAsync(int productId)
+        public async Task<GetSingleProductResponseDto?> GetProductByIdAsync(int productId)
         {
+            GetSingleProductResponseDto response = new GetSingleProductResponseDto();
+
             var product = await _context.Products
                 .Where(p => p.Id == productId)
                 .Include(p => p.Brand)
@@ -119,7 +121,40 @@ namespace ShoeStore.Services
 
             if (product != null)
             {
-                var response = _mapper.Map<ProductDto>(product);
+
+                var productImages = await _context.ProductImages
+                    .Where(i => i.ProductId == productId)
+                    .ToListAsync();
+
+                var relatedProducts = await _context.Products
+                    .Where(p => p.BrandId == product.BrandId &&
+                        p.AudienceId == product.AudienceId &&
+                        p.Id != productId)
+                    .Take(3)
+                    .ToListAsync();
+
+                if (!relatedProducts.Any() || relatedProducts.Count() < 3)
+                {
+                    var remainingProducts = await _context.Products
+                       .Where(p => p.AudienceId == product.AudienceId &&
+                           p.Id != productId)
+                       .Include(p => p.Brand)
+                       .Include(p => p.Audience)
+                       .Take(3 - relatedProducts.Count())
+                       .ToListAsync();
+
+                    relatedProducts.AddRange(remainingProducts);
+
+                }
+                var mappedProduct = _mapper.Map<ProductDto>(product);
+                var mappedproductImages = _mapper.Map<List<AdditionalProductImageDto>>(productImages);
+                var mappedRelatedProducts = _mapper.Map<List<ProductDto>>(relatedProducts);
+
+
+                response.Product = mappedProduct;
+                response.AdditionalImages = mappedproductImages;
+                response.RelatedProducts = mappedRelatedProducts;
+
                 return response;
             }
 
