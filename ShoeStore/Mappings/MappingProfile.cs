@@ -1,5 +1,6 @@
 ﻿using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Product;
+using ShoeStore.Dto.Order;
 using AutoMapper;
 
 namespace ShoeStore.Mappings
@@ -15,6 +16,18 @@ namespace ShoeStore.Mappings
 
             // Map individual product images; collections will be mapped automatically
             CreateMap<ProductImage, AdditionalProductImageDto>();
+
+            // Order mappings
+            CreateMap<Order, OrderDto>()
+                .ForMember(dest => dest.OrderStatusName, opt => opt.MapFrom(src => src.OrderStatus != null ? src.OrderStatus.DisplayName : string.Empty));
+
+            CreateMap<OrderItem, OrderItemDto>();
+
+            // Shipping Address mappings
+            CreateMap<ShippingAddress, ShippingAddressDto>();
+
+            // Billing Address mappings
+            CreateMap<BillingAddress, BillingAddressDto>();
         }
     }
 }

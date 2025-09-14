@@ -29,7 +29,7 @@ public partial class Order
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual UserAddress? BillingAddress { get; set; }
+    public virtual BillingAddress? BillingAddress { get; set; }
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
@@ -37,7 +37,7 @@ public partial class Order
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
-    public virtual UserAddress? ShippingAddress { get; set; }
+    public virtual ShippingAddress? ShippingAddress { get; set; }
 
 
 }

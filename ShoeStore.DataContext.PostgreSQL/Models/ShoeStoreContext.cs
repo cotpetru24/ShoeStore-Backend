@@ -39,7 +39,9 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
 
     public virtual DbSet<ProductSize> ProductSizes { get; set; }
 
-    public virtual DbSet<UserAddress> UserAddresses { get; set; }
+    public virtual DbSet<ShippingAddress> ShippingAddresses { get; set; }
+
+    public virtual DbSet<BillingAddress> BillingAddresses { get; set; }
 
     public virtual DbSet<UserDetail> UserDetails { get; set; }
 
@@ -389,33 +391,38 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                 .HasConstraintName("product_sizes_product_id_fkey");
         });
 
-        modelBuilder.Entity<UserAddress>(entity =>
+        modelBuilder.Entity<ShippingAddress>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("user_addresses_pkey");
+            entity.HasKey(e => e.Id).HasName("shipping_address_pkey");
 
-            entity.ToTable("user_addresses");
+            entity.ToTable("shipping_address");
 
             entity.Property(e => e.Id)
                 .UseIdentityAlwaysColumn()
                 .HasColumnName("id");
-            entity.Property(e => e.City).HasColumnName("city");
-            entity.Property(e => e.Country)
-                .HasDefaultValueSql("'United Kingdom'::text")
-                .HasColumnName("country");
-            entity.Property(e => e.County).HasColumnName("county");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("created_at");
-            entity.Property(e => e.HouseNumber).HasColumnName("house_number");
-            entity.Property(e => e.IsDefault)
-                .HasDefaultValue(false)
-                .HasColumnName("is_default");
-            entity.Property(e => e.PostCode).HasColumnName("post_code");
-            entity.Property(e => e.Street).HasColumnName("street");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.AddressLine1).HasColumnName("address_line_1");
+            entity.Property(e => e.City).HasColumnName("city");
+            entity.Property(e => e.County).HasColumnName("county");
+            entity.Property(e => e.Postcode).HasColumnName("postcode");
+            entity.Property(e => e.Country).HasColumnName("country");
+        });
 
+        modelBuilder.Entity<BillingAddress>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("billing_address_pkey");
 
+            entity.ToTable("billing_address");
+
+            entity.Property(e => e.Id)
+                .UseIdentityAlwaysColumn()
+                .HasColumnName("id");
+            //entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.AddressLine1).HasColumnName("address_line_1");
+            entity.Property(e => e.City).HasColumnName("city");
+            entity.Property(e => e.County).HasColumnName("county");
+            entity.Property(e => e.Postcode).HasColumnName("postcode");
+            entity.Property(e => e.Country).HasColumnName("country");
         });
 
         modelBuilder.Entity<UserDetail>(entity =>
