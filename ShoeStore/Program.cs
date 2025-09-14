@@ -12,6 +12,8 @@ using ShoeStore.Services;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Stripe;
+using ProductService = ShoeStore.Services.ProductService;
 
 namespace ShoeStore
 {
@@ -65,6 +67,9 @@ namespace ShoeStore
 
             builder.Services.AddScoped<ProductService, ProductService>();
             builder.Services.AddScoped<AuthService, AuthService>();
+            builder.Services.AddScoped<PaymentService, PaymentService>();
+            //builder.Services.AddScoped<PaymentIntentService, PaymentIntentService>();
+            //builder.Services.AddScoped<PaymentIntentCreateOptions, PaymentIntentCreateOptions>();
 
             builder.Services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<ShoeStoreContext>()
@@ -106,6 +111,11 @@ namespace ShoeStore
                 });
             });
 
+
+
+            var test = Environment.GetEnvironmentVariable("Stripe__SecretKey");
+
+            StripeConfiguration.ApiKey = Environment.GetEnvironmentVariable("Stripe__SecretKey");
 
 
             builder.Services.AddControllers()
