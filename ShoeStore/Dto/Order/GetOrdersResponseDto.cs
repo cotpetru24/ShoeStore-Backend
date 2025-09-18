@@ -9,3 +9,4 @@ namespace ShoeStore.Dto.Order
         public int TotalPages { get; set; }
     }
 }
+

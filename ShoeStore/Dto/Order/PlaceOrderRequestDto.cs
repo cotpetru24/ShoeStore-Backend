@@ -32,3 +32,4 @@ namespace ShoeStore.Dto.Order
         public string? Size { get; set; }
     }
 }
+

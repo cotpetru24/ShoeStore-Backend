@@ -21,3 +21,4 @@ public partial class BillingAddress
 
     public virtual ICollection<Order> OrderBillingAddresses { get; set; } = new List<Order>();
 }
+

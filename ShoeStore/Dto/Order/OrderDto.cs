@@ -20,3 +20,4 @@ namespace ShoeStore.Dto.Order
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
     }
 }
+
