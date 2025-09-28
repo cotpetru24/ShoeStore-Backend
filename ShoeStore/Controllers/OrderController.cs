@@ -315,5 +315,41 @@ namespace ShoeStore.Controllers
             }
         }
 
+
+        [HttpPut("cancel-order/{orderId}")]
+        [ProducesResponseType(200, Type = typeof(OrderDto))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> CancelOrder(int orderId)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var userId = User.FindFirst("Id")?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized("User not authenticated");
+
+                var result = await _orderService.CancelOrder(orderId, userId);
+
+                if (result == null) return NotFound("Order not found or cannot be cancelled");
+
+                return Ok(result);
+                                   }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch
+            {
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+
+
     }
 }

@@ -12,6 +12,8 @@ namespace ShoeStore.Dto.Order
         public int Quantity { get; set; }
         public string? Size { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public string? ImagePath { get; set; }
+        public string? BrandName {get; set; }
     }
 }
 

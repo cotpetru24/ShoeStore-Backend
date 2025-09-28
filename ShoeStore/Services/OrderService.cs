@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Order;
@@ -32,7 +33,6 @@ namespace ShoeStore.Services
 
                     if (product == null)
                         throw new ArgumentException($"Product with ID {item.ProductId} not found");
-
                     if (product.Stock < item.Quantity)
                         throw new ArgumentException($"Insufficient stock for product {product.Name}. Available: {product.Stock}, Requested: {item.Quantity}");
 
@@ -56,15 +56,15 @@ namespace ShoeStore.Services
                 // Validate addresses
                 var shippingAddress = await _context.ShippingAddresses
                     .FirstOrDefaultAsync(a => a.Id == request.ShippingAddressId && a.UserId == userId);
-                
+
                 if (shippingAddress == null)
                     throw new ArgumentException("Invalid shipping address");
 
                 var billingAddress = await _context.BillingAddresses
                     .FirstOrDefaultAsync(a => a.Id == 1);
-                    //.FirstOrDefaultAsync(a => a.Id == request.BillingAddressId);
-                    //.FirstOrDefaultAsync(a => a.Id == request.BillingAddressId && a.UserId == userId);
-                
+                //.FirstOrDefaultAsync(a => a.Id == request.BillingAddressId);
+                //.FirstOrDefaultAsync(a => a.Id == request.BillingAddressId && a.UserId == userId);
+
                 if (billingAddress == null)
                     throw new ArgumentException("Invalid billing address");
 
@@ -131,7 +131,13 @@ namespace ShoeStore.Services
                 .Where(o => o.Id == orderId && o.UserId == userId)
                 .Include(o => o.OrderStatus)
                 .Include(o => o.OrderItems)
+
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product.Brand)
                 .FirstOrDefaultAsync();
+
 
             if (order == null)
                 return null;
@@ -329,5 +335,31 @@ namespace ShoeStore.Services
             return _mapper.Map<BillingAddressDto>(address);
         }
 
+
+        public async Task<OrderDto?> CancelOrder(int orderId, string userId)
+        {
+            var existingOrder = await _context.Orders
+                .Where(o => o.Id == orderId && o.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (existingOrder == null 
+                || existingOrder.OrderStatusId == 5
+                || existingOrder.OrderStatusId == 6
+                || existingOrder.OrderStatusId == 7) return null;
+
+                existingOrder.OrderStatusId = 5;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+
+                return await GetOrderByIdAsync(orderId, userId);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                return null;
+            }
+        }
     }
 }
