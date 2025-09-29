@@ -115,7 +115,6 @@ namespace ShoeStore.Controllers
                     return Unauthorized("User not authenticated");
 
                 var result = await _orderService.CreateShippingAddressAsync(request, userId);
-                var result2 = await _orderService.CreateBillingAddressAsync(request, userId);
 
                 return Ok(result);
             }

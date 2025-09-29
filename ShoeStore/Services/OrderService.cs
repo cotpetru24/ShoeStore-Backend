@@ -60,13 +60,45 @@ namespace ShoeStore.Services
                 if (shippingAddress == null)
                     throw new ArgumentException("Invalid shipping address");
 
-                var billingAddress = await _context.BillingAddresses
-                    .FirstOrDefaultAsync(a => a.Id == 1);
-                //.FirstOrDefaultAsync(a => a.Id == request.BillingAddressId);
-                //.FirstOrDefaultAsync(a => a.Id == request.BillingAddressId && a.UserId == userId);
+                #region Billing Address
 
-                if (billingAddress == null)
+                BillingAddress billingAddressToStore = new BillingAddress();
+
+                if (request.BillingAddressSameAsShipping)
+                {
+                    billingAddressToStore = new BillingAddress
+                    {
+                        AddressLine1 = shippingAddress.AddressLine1,
+                        City = shippingAddress.City,
+                        County = shippingAddress.County,
+                        Country = shippingAddress.Country,
+                        Postcode = shippingAddress.Postcode,
+                        UserId = userId
+                    };
+                }
+                else
+                {
+                    billingAddressToStore = new BillingAddress
+                    {
+                        AddressLine1 = request.BillingAddressRequest.AddressLine1,
+                        City = request.BillingAddressRequest.City,
+                        County = request.BillingAddressRequest.County,
+                        Country = request.BillingAddressRequest.Country,
+                        Postcode = request.BillingAddressRequest.Postcode,
+                        UserId = userId
+                    };
+
+                }
+
+                _context.BillingAddresses.Add(billingAddressToStore);
+                await _context.SaveChangesAsync();
+
+                var billingAddressId = billingAddressToStore.Id;
+
+                if (billingAddressId <= 0)
                     throw new ArgumentException("Invalid billing address");
+
+                #endregion
 
                 // Get default order status (assuming "pending" is the default)
                 var defaultOrderStatus = await _context.OrderStatuses
@@ -87,10 +119,8 @@ namespace ShoeStore.Services
                     ShippingCost = request.ShippingCost,
                     Discount = request.Discount,
                     Total = total,
-                    //ShippingAddressId = request.ShippingAddressId,
-                    ShippingAddressId = 1,
-                    BillingAddressId = 1,
-                    //BillingAddressId = request.BillingAddressId,
+                    ShippingAddressId = request.ShippingAddressId,
+                    BillingAddressId = billingAddressId,
                     Notes = request.Notes,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
@@ -131,12 +161,12 @@ namespace ShoeStore.Services
                 .Where(o => o.Id == orderId && o.UserId == userId)
                 .Include(o => o.OrderStatus)
                 .Include(o => o.OrderItems)
-
-                .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product.Brand)
+                        .ThenInclude(p => p.Brand)
+                .Include(o => o.ShippingAddress)
+                .Include(o => o.BillingAddress)
                 .FirstOrDefaultAsync();
+
 
 
             if (order == null)
@@ -290,11 +320,10 @@ namespace ShoeStore.Services
 
         // Billing Address Methods
         public async Task<BillingAddressResponseDto> CreateBillingAddressAsync(CreateShippingAddressRequestDto request, string userId)
-        //public async Task<BillingAddressResponseDto> CreateBillingAddressAsync(CreateBillingAddressRequestDto request, string userId)
         {
             var newAddress = new BillingAddress
             {
-                //UserId = userId,
+                UserId = userId,
                 AddressLine1 = request.AddressLine1,
                 City = request.City,
                 County = request.County,
@@ -342,12 +371,12 @@ namespace ShoeStore.Services
                 .Where(o => o.Id == orderId && o.UserId == userId)
                 .FirstOrDefaultAsync();
 
-            if (existingOrder == null 
+            if (existingOrder == null
                 || existingOrder.OrderStatusId == 5
                 || existingOrder.OrderStatusId == 6
                 || existingOrder.OrderStatusId == 7) return null;
 
-                existingOrder.OrderStatusId = 5;
+            existingOrder.OrderStatusId = 5;
 
             try
             {

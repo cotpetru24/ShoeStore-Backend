@@ -25,11 +25,6 @@ namespace ShoeStore.Mappings
                 .ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImagePath : string.Empty))
                 .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Product != null && src.Product.Brand != null ? src.Product.Brand.Name : string.Empty));
 
-            //CreateMap<OrderItem, OrderItemDto>()
-            //    .ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImagePath : null))
-            //    .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Product != null && src.Product.Brand != null ? src.Product.Brand.Name : null));
-
-
             // Shipping Address mappings
             CreateMap<ShippingAddress, ShippingAddressDto>();
 

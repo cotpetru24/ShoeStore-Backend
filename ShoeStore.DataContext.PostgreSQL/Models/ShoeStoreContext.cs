@@ -417,12 +417,13 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.Id)
                 .UseIdentityAlwaysColumn()
                 .HasColumnName("id");
-            //entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.AddressLine1).HasColumnName("address_line_1");
             entity.Property(e => e.City).HasColumnName("city");
             entity.Property(e => e.County).HasColumnName("county");
             entity.Property(e => e.Postcode).HasColumnName("postcode");
             entity.Property(e => e.Country).HasColumnName("country");
+
         });
 
         modelBuilder.Entity<UserDetail>(entity =>
