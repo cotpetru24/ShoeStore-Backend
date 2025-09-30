@@ -10,11 +10,14 @@ namespace ShoeStore.Services
     {
         private readonly ShoeStoreContext _context;
         private readonly IMapper _mapper;
+        private readonly PaymentService _paymentService;
 
-        public OrderService(ShoeStoreContext injectedContext, IMapper injectedMapper)
+        public OrderService(ShoeStoreContext injectedContext, IMapper injectedMapper, PaymentService paymentService)
         {
             _context = injectedContext;
             _mapper = injectedMapper;
+            _paymentService = paymentService;
+
         }
 
         public async Task<PlaceOrderResponseDto> PlaceOrderAsync(PlaceOrderRequestDto request, string userId)
@@ -102,7 +105,7 @@ namespace ShoeStore.Services
 
                 // Get default order status (assuming "pending" is the default)
                 var defaultOrderStatus = await _context.OrderStatuses
-                    .FirstOrDefaultAsync(s => s.Code == "pending");
+                    .FirstOrDefaultAsync(s => s.Code == "processing");
 
                 if (defaultOrderStatus == null)
                     throw new InvalidOperationException("Default order status not found");
@@ -165,6 +168,10 @@ namespace ShoeStore.Services
                         .ThenInclude(p => p.Brand)
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
+                .Include(o => o.Payments)
+                    .ThenInclude(p=>p.PaymentStatus)
+                .Include(o => o.Payments)
+                    .ThenInclude(p => p.PaymentMethod)
                 .FirstOrDefaultAsync();
 
 
@@ -378,9 +385,21 @@ namespace ShoeStore.Services
 
             existingOrder.OrderStatusId = 5;
 
+
+
             try
             {
-                await _context.SaveChangesAsync();
+                var rowsaffected = await _context.SaveChangesAsync();
+
+                bool? refundResponse = null;
+
+                if ( rowsaffected == 1)
+                {
+                    refundResponse = await _paymentService.RefundPayment(orderId);
+
+                }
+                if (refundResponse != true) return null;
+
 
                 return await GetOrderByIdAsync(orderId, userId);
             }

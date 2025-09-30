@@ -215,6 +215,14 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.PaymentMethodId).HasColumnName("payment_method_id");
             entity.Property(e => e.PaymentStatusId).HasColumnName("payment_status_id");
+            entity.Property(e => e.PaymentIntentId).HasColumnName("payment_intent_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.CardBrand).HasColumnName("card_brand");
+            entity.Property(e => e.CardLast4).HasColumnName("card_last4");
+            entity.Property(e => e.BillingName).HasColumnName("billing_name");
+            entity.Property(e => e.BillingEmail).HasColumnName("billing_email");
+            entity.Property(e => e.ReceiptUrl).HasColumnName("receipt_url");
+
             entity.Property(e => e.ProcessedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("processed_at");

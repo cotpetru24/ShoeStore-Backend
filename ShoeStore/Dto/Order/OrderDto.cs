@@ -1,3 +1,4 @@
+using ShoeStore.Dto.Payment;
 using System.ComponentModel.DataAnnotations;
 
 namespace ShoeStore.Dto.Order
@@ -18,6 +19,7 @@ namespace ShoeStore.Dto.Order
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
+        public PaymentDto? Payment { get; set; }
     }
 }
 
