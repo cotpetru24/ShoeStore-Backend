@@ -7,7 +7,23 @@ namespace ShoeStore.Dto.Order
         public string? OrderStatus { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
+        public SortBy? SortBy { get; set; }
+        public SortDirection? SortDirection { get; set; }
     }
+
+
+    public enum SortBy 
+    { 
+        Date,
+        Total
+    }
+
+    public enum SortDirection
+    { 
+        Ascending,
+        Descending
+    }
+
 }
 
 

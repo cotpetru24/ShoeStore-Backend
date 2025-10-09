@@ -70,6 +70,7 @@ namespace ShoeStore
             builder.Services.AddScoped<PaymentService, PaymentService>();
             builder.Services.AddScoped<OrderService, OrderService>();
             builder.Services.AddScoped<UserService, UserService>();
+            builder.Services.AddScoped<AdminService, AdminService>();
             //builder.Services.AddScoped<PaymentIntentService, PaymentIntentService>();
             //builder.Services.AddScoped<PaymentIntentCreateOptions, PaymentIntentCreateOptions>();
 

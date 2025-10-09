@@ -152,7 +152,7 @@ namespace ShoeStore.Services
 
             foreach (var role in userRoles)
             {
-                claims.Add(new Claim("Role", role));
+                claims.Add(new Claim("role", role));
             }
 
             claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
