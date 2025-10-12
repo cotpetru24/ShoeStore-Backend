@@ -31,7 +31,7 @@ public partial class Product
 
     public int? DiscountPercentage { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 

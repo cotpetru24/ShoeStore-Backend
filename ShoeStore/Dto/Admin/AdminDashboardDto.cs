@@ -17,7 +17,10 @@ namespace ShoeStore.Dto.Admin
         public decimal ThisMonthRevenue { get; set; }
         public int NewUsersToday { get; set; }
         public int NewUsersThisMonth { get; set; }
+        public int NewOrdersToday { get; set; }
         public int LowStockProducts { get; set; }
         public int OutOfStockProducts { get; set; }
+        public List<RecentActivityDto> RecentActivity { get; set; }
+
     }
 }

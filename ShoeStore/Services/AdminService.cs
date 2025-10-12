@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
+using System.Linq;
 using System.Security.Claims;
 
 namespace ShoeStore.Services
@@ -28,18 +29,26 @@ namespace ShoeStore.Services
         public async Task<AdminDashboardDto> GetDashboardStatsAsync()
         {
             var today = DateTime.UtcNow.Date;
-            var thisMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var thisMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
             var totalUsers = await _userManager.Users.CountAsync();
             var totalOrders = await _context.Orders.CountAsync();
             var totalProducts = await _context.Products.CountAsync();
-            
-            // Get total revenue from delivered orders
-            var deliveredOrders = await _context.Orders
+
+            // Calculate new orders today
+            var newOrdersToday = await _context.Orders
+                .Where(o => o.CreatedAt >= today)
+                .CountAsync();
+
+            // Get total revenue from orders with processing, shipped, and delivered status
+            var totalRevenueOrders = await _context.Orders
                 .Include(o => o.OrderStatus)
-                .Where(o => o.OrderStatus != null && o.OrderStatus.Code == "delivered")
+                .Where(o => o.OrderStatus != null 
+                && (o.OrderStatus.Code == "delivered"
+                || o.OrderStatus.Code == "processing"
+                || o.OrderStatus.Code == "shipped"))
                 .ToListAsync();
-            var totalRevenue = deliveredOrders.Sum(o => o.Total);
+            var totalRevenue = totalRevenueOrders.Sum(o => o.Total);
 
             // Get order counts by status
             var ordersWithStatus = await _context.Orders
@@ -53,30 +62,100 @@ namespace ShoeStore.Services
             var cancelledOrders = ordersWithStatus.Count(o => o.OrderStatus?.Code == "cancelled");
 
             // Calculate today's revenue
-            var todayRevenue = deliveredOrders
+            var todayRevenue = totalRevenueOrders
                 .Where(o => o.CreatedAt >= today)
                 .Sum(o => o.Total);
 
             // Calculate this month's revenue
-            var thisMonthRevenue = deliveredOrders
+            var thisMonthRevenue = totalRevenueOrders
                 .Where(o => o.CreatedAt >= thisMonth)
                 .Sum(o => o.Total);
 
-            // For new users, we'll use a simplified approach since we don't have creation dates
-            var newUsersToday = 0; // Would need to track user creation dates
-            var newUsersThisMonth = 0; // Would need to track user creation dates
+            // Calculate new users today
+            var newUsersToday = await _context.UserDetails
+                .Where(u => u.CreatedAt >= today)
+                .CountAsync();
+
+            // Calculate new users this month
+            var newUsersThisMonth = await _context.UserDetails
+                .Where(u => u.CreatedAt >= thisMonth )
+                .CountAsync();
+
 
             var lowStockProducts = await _context.Products
                 .CountAsync(p => p.Stock > 0 && p.Stock <= 10);
             var outOfStockProducts = await _context.Products
                 .CountAsync(p => p.Stock == 0);
 
-            return new AdminDashboardDto
+
+            //Query to the latest 10 activities
+            //When audit entity is acreated and added, user the audit to cet the recent activity
+            var userQuery = _context.UserDetails
+                .Select(u => new RecentActivityDto
+                {
+                    Source = "User",
+                    UserGuid = u.AspNetUserId,
+                    UserEmail = u.AspNetUser.Email,
+                    Id = null,
+                    Description = string.Empty,   
+                    CreatedAt = u.CreatedAt
+                });
+
+            var productQuery = _context.Products
+                .Select(p => new RecentActivityDto
+                {
+                    Source = "Product",
+                    UserGuid = null,
+                    UserEmail = null,
+                    Id = p.Id,
+                    Description = string.Empty,   
+                    CreatedAt = p.CreatedAt
+                });
+
+            var orderQuery = _context.Orders
+                .Select(o => new RecentActivityDto
+                {
+                    Source = "Order",
+                    UserGuid = null,
+                    UserEmail= null,
+                    Id = o.Id,
+                    Description = string.Empty,
+                    CreatedAt = o.CreatedAt
+                });
+
+            var unifiedQuery = userQuery
+                .Union(productQuery)
+                .Union(orderQuery)
+                .OrderByDescending(x => x.CreatedAt)
+                .Take(10);
+
+            var recentActivities = unifiedQuery
+                .AsEnumerable()
+                .Select(x => new RecentActivityDto
+                {
+                    Source = x.Source,
+                    UserGuid = x.UserGuid,
+                    Id = x.Id,
+                    CreatedAt = x.CreatedAt,
+                    Description = x.Source switch
+                    {
+                        "User" => $"User {x.UserEmail} created",
+                        "Product" => $"Product #{x.Id} added",
+                        "Order" => $"Order #{x.Id} placed",
+                        _ => ""
+                    }
+                })
+                .ToList();
+
+
+
+            var test =  new AdminDashboardDto
             {
                 TotalUsers = totalUsers,
                 TotalOrders = totalOrders,
                 TotalProducts = totalProducts,
                 TotalRevenue = totalRevenue,
+                NewOrdersToday = newOrdersToday,
                 PendingOrders = pendingOrders,
                 ProcessingOrders = processingOrders,
                 ShippedOrders = shippedOrders,
@@ -87,8 +166,10 @@ namespace ShoeStore.Services
                 NewUsersToday = newUsersToday,
                 NewUsersThisMonth = newUsersThisMonth,
                 LowStockProducts = lowStockProducts,
-                OutOfStockProducts = outOfStockProducts
+                OutOfStockProducts = outOfStockProducts,
+                RecentActivity = recentActivities
             };
+            return test;
         }
 
         #endregion

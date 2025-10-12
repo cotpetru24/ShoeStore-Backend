@@ -12,6 +12,8 @@ namespace ShoeStore.DataContext.PostgreSQL.Models
         public string AspNetUserId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public virtual IdentityUser AspNetUser { get; set; }
     }

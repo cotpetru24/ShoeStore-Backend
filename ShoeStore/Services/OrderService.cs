@@ -125,8 +125,8 @@ namespace ShoeStore.Services
                     ShippingAddressId = request.ShippingAddressId,
                     BillingAddressId = billingAddressId,
                     Notes = request.Notes,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
                 _context.Orders.Add(order);
@@ -148,7 +148,7 @@ namespace ShoeStore.Services
                     OrderId = order.Id,
                     Message = "Order placed successfully",
                     Total = order.Total,
-                    CreatedAt = order.CreatedAt ?? DateTime.UtcNow
+                    CreatedAt = order.CreatedAt
                 };
             }
             catch
