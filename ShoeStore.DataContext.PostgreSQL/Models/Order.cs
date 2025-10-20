@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 
 namespace ShoeStore.DataContext.PostgreSQL.Models;
@@ -34,6 +35,8 @@ public partial class Order
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual OrderStatus? OrderStatus { get; set; }
+
+    public virtual UserDetail? UserDetail { get; set; }
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 

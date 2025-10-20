@@ -43,7 +43,7 @@ namespace ShoeStore.Services
             // Get total revenue from orders with processing, shipped, and delivered status
             var totalRevenueOrders = await _context.Orders
                 .Include(o => o.OrderStatus)
-                .Where(o => o.OrderStatus != null 
+                .Where(o => o.OrderStatus != null
                 && (o.OrderStatus.Code == "delivered"
                 || o.OrderStatus.Code == "processing"
                 || o.OrderStatus.Code == "shipped"))
@@ -78,7 +78,7 @@ namespace ShoeStore.Services
 
             // Calculate new users this month
             var newUsersThisMonth = await _context.UserDetails
-                .Where(u => u.CreatedAt >= thisMonth )
+                .Where(u => u.CreatedAt >= thisMonth)
                 .CountAsync();
 
 
@@ -97,7 +97,7 @@ namespace ShoeStore.Services
                     UserGuid = u.AspNetUserId,
                     UserEmail = u.AspNetUser.Email,
                     Id = null,
-                    Description = string.Empty,   
+                    Description = string.Empty,
                     CreatedAt = u.CreatedAt
                 });
 
@@ -108,7 +108,7 @@ namespace ShoeStore.Services
                     UserGuid = null,
                     UserEmail = null,
                     Id = p.Id,
-                    Description = string.Empty,   
+                    Description = string.Empty,
                     CreatedAt = p.CreatedAt
                 });
 
@@ -117,7 +117,7 @@ namespace ShoeStore.Services
                 {
                     Source = "Order",
                     UserGuid = null,
-                    UserEmail= null,
+                    UserEmail = null,
                     Id = o.Id,
                     Description = string.Empty,
                     CreatedAt = o.CreatedAt
@@ -149,7 +149,7 @@ namespace ShoeStore.Services
 
 
 
-            var test =  new AdminDashboardDto
+            var test = new AdminDashboardDto
             {
                 TotalUsers = totalUsers,
                 TotalOrders = totalOrders,
@@ -200,7 +200,7 @@ namespace ShoeStore.Services
             {
                 var userDetail = await _context.UserDetails
                     .FirstOrDefaultAsync(ud => ud.AspNetUserId == user.Id);
-                
+
                 var userRoles = await _userManager.GetRolesAsync(user);
 
                 // Get user statistics
@@ -386,13 +386,23 @@ namespace ShoeStore.Services
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentStatus)
+                .Include(o => o.UserDetail)
+                    .ThenInclude(u => u.AspNetUser)
                 .AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                query = query.Where(o => o.Id.ToString().Contains(request.SearchTerm) ||
-                                       o.UserId!.Contains(request.SearchTerm));
+                var term = request.SearchTerm.ToLower();
+
+                query = query.Where(o =>
+                    o.Id.ToString().Contains(term) ||
+                    (o.UserDetail != null && (
+                        ((o.UserDetail.FirstName + " " + o.UserDetail.LastName).ToLower().Contains(term)) ||
+                        (o.UserDetail.AspNetUser != null &&
+                         o.UserDetail.AspNetUser.Email.ToLower().Contains(term))
+                    ))
+                );
             }
 
             if (!string.IsNullOrEmpty(request.StatusFilter))
@@ -400,23 +410,47 @@ namespace ShoeStore.Services
                 query = query.Where(o => o.OrderStatus!.Code == request.StatusFilter);
             }
 
-            if (request.StartDate.HasValue)
+            if (request.FromDate.HasValue)
             {
-                query = query.Where(o => o.CreatedAt >= request.StartDate);
+                query = query.Where(o => o.CreatedAt >= request.FromDate);
             }
 
-            if (request.EndDate.HasValue)
+            if (request.ToDate.HasValue)
             {
-                query = query.Where(o => o.CreatedAt <= request.EndDate);
+                query = query.Where(o => o.CreatedAt <= request.ToDate);
             }
 
             // Apply sorting
-            query = request.SortBy?.ToLower() switch
+            // Default sort by date if no SortBy provided
+            var sortBy = request.SortBy;
+            var sortDir = request.SortDirection;
+
+            IQueryable<Order> sortedQuery = query;
+
+            switch (sortBy)
             {
-                "total" => request.SortDirection == "asc" ? query.OrderBy(o => o.Total) : query.OrderByDescending(o => o.Total),
-                "status" => request.SortDirection == "asc" ? query.OrderBy(o => o.OrderStatus!.DisplayName) : query.OrderByDescending(o => o.OrderStatus!.DisplayName),
-                _ => request.SortDirection == "asc" ? query.OrderBy(o => o.CreatedAt) : query.OrderByDescending(o => o.CreatedAt)
-            };
+                case AdminSortBy.Total:
+                    sortedQuery = sortDir == AdminSortDirection.Ascending
+                        ? query.OrderBy(o => o.Total)
+                        : query.OrderByDescending(o => o.Total);
+                    break;
+
+                case AdminSortBy.DateCreated:
+                    sortedQuery = sortDir == AdminSortDirection.Ascending
+                        ? query.OrderBy(o => o.CreatedAt)
+                        : query.OrderByDescending(o => o.CreatedAt);
+                    break;
+
+                default:
+                    sortedQuery = sortDir == AdminSortDirection.Ascending
+                        ? query.OrderBy(o => o.CreatedAt)
+                        : query.OrderByDescending(o => o.CreatedAt);
+                    break;
+            }
+
+            query = sortedQuery;
+
+
 
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
@@ -446,15 +480,15 @@ namespace ShoeStore.Services
                     //BrandName=oi.Product.Brand.Name
                 }).ToList();
 
-                var payments = order.Payments.Select(p => new AdminPaymentDto
+                var payment = order.Payments.Select(p => new AdminPaymentDto
                 {
                     Id = p.Id,
-                    PaymentMethodName = p.PaymentMethod?.DisplayName ?? "Unknown",
+                    PaymentMethod = p.PaymentMethod?.DisplayName ?? "Unknown",
                     PaymentStatusName = p.PaymentStatus?.DisplayName ?? "Unknown",
                     Amount = p.Amount,
                     TransactionId = p.TransactionId,
                     CreatedAt = p.CreatedAt
-                }).ToList();
+                }).FirstOrDefault();
 
                 adminOrders.Add(new AdminOrderDto
                 {
@@ -498,7 +532,7 @@ namespace ShoeStore.Services
                         PhoneNumber = "" // Not available in current model
                     } : null,
                     OrderItems = orderItems,
-                    Payments = payments
+                    Payment = payment
                 });
             }
 
@@ -520,10 +554,11 @@ namespace ShoeStore.Services
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                    .ThenInclude(p => p.Brand)
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payments)
-                    .ThenInclude(p => p.PaymentStatus)
+                    .ThenInclude(s => s.PaymentStatus)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null) return null;
@@ -550,49 +585,55 @@ namespace ShoeStore.Services
                 ShippingAddress = order.ShippingAddress != null ? new AdminShippingAddressDto
                 {
                     Id = order.ShippingAddress.Id,
-                    FirstName = "", // Not available in current model
-                    LastName = "", // Not available in current model
+                    FirstName = "",
+                    LastName = "",
                     AddressLine1 = order.ShippingAddress.AddressLine1,
-                    AddressLine2 = "", // Not available in current model
+                    AddressLine2 = "",
                     City = order.ShippingAddress.City,
                     State = order.ShippingAddress.County,
                     PostalCode = order.ShippingAddress.Postcode,
                     Country = order.ShippingAddress.Country,
-                    PhoneNumber = "" // Not available in current model
+                    PhoneNumber = ""
                 } : null,
                 BillingAddress = order.BillingAddress != null ? new AdminBillingAddressDto
                 {
                     Id = order.BillingAddress.Id,
-                    FirstName = "", // Not available in current model
-                    LastName = "", // Not available in current model
+                    FirstName = "",
+                    LastName = "",
                     AddressLine1 = order.BillingAddress.AddressLine1,
-                    AddressLine2 = "", // Not available in current model
+                    AddressLine2 = "",
                     City = order.BillingAddress.City,
                     State = order.BillingAddress.County,
                     PostalCode = order.BillingAddress.Postcode,
                     Country = order.BillingAddress.Country,
-                    PhoneNumber = "" // Not available in current model
+                    PhoneNumber = ""
                 } : null,
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
                     ProductId = oi.ProductId ?? 0,
                     ProductName = oi.ProductName ?? "Unknown Product",
-                    ImagePath= oi.Product?.ImagePath,
+                    ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
-                    //BrandName = oi.Product.Brand.Name
-                    
+                    BrandName = oi.Product.Brand.Name
+
                 }).ToList(),
-                Payments = order.Payments.Select(p => new AdminPaymentDto
+                Payment = order.Payments.Select(p => new AdminPaymentDto
                 {
                     Id = p.Id,
-                    PaymentMethodName = p.PaymentMethod?.DisplayName ?? "Unknown",
                     PaymentStatusName = p.PaymentStatus?.DisplayName ?? "Unknown",
                     Amount = p.Amount,
                     TransactionId = p.TransactionId,
-                    CreatedAt = p.CreatedAt
-                }).ToList()
+                    CreatedAt = p.CreatedAt,
+                    Currency = p.Currency,
+                    CardBrand = p.CardBrand,
+                    CardLast4 = p.CardLast4,
+                    BillingName = p.BillingName,
+                    BillingEmail = p.BillingEmail,
+                    PaymentMethod = p.PaymentMethod.DisplayName,
+                    ReceiptUrl = p.ReceiptUrl
+                }).FirstOrDefault()
             };
         }
 
@@ -605,11 +646,12 @@ namespace ShoeStore.Services
             order.UpdatedAt = DateTime.UtcNow;
             if (!string.IsNullOrEmpty(request.Notes))
             {
-                order.Notes = request.Notes;
+                order.Notes = $"{order.Notes}. Note added on {DateTime.UtcNow.ToString()} => {request.Notes}";
             }
 
-            await _context.SaveChangesAsync();
-            return true;
+            var rowsAffected = await _context.SaveChangesAsync();
+
+            return rowsAffected == 1 ? true : false;
         }
 
         #endregion

@@ -137,6 +137,15 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                 .HasForeignKey(d => d.ShippingAddressId)
                 .HasConstraintName("orders_shipping_address_id_fkey");
 
+            entity.HasOne(o => o.UserDetail)
+                .WithMany()
+                .HasForeignKey(o => o.UserId)
+                .HasConstraintName("orders_user_id_fkey")
+                .OnDelete(DeleteBehavior.SetNull);
+
+
+
+
 
         });
 

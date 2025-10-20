@@ -1,6 +1,7 @@
 using ShoeStore.Dto.Order;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ShoeStore.Dto.Admin
 {
@@ -22,7 +23,7 @@ namespace ShoeStore.Dto.Admin
         public AdminShippingAddressDto? ShippingAddress { get; set; }
         public AdminBillingAddressDto? BillingAddress { get; set; }
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
-        public List<AdminPaymentDto> Payments { get; set; } = new List<AdminPaymentDto>();
+        public AdminPaymentDto Payment { get; set; } = new AdminPaymentDto();
     }
 
     public class AdminOrderListDto
@@ -73,7 +74,7 @@ namespace ShoeStore.Dto.Admin
         public string? PhoneNumber { get; set; }
     }
 
-    public class AdminPaymentDto
+    public class AdminPaymentBriefDto
     {
         public int Id { get; set; }
         public string? PaymentMethodName { get; set; }
@@ -81,6 +82,33 @@ namespace ShoeStore.Dto.Admin
         public decimal Amount { get; set; }
         public string? TransactionId { get; set; }
         public DateTime? CreatedAt { get; set; }
+    }
+
+    public class AdminPaymentDto
+    {
+        public int Id { get; set; }
+
+        public string? PaymentStatusName { get; set; }
+
+        public string? TransactionId { get; set; }
+
+        public DateTime? CreatedAt { get; set; }
+
+        public decimal Amount { get; set; }
+
+        public string? Currency { get; set; }
+
+        public string? CardBrand { get; set; }
+
+        public string? CardLast4 { get; set; }
+
+        public string? BillingName { get; set; }
+
+        public string? BillingEmail { get; set; }
+
+        public string? PaymentMethod { get; set; }
+
+        public string? ReceiptUrl { get; set; }
     }
 
     public class UpdateOrderStatusRequestDto
@@ -95,9 +123,22 @@ namespace ShoeStore.Dto.Admin
         public int PageSize { get; set; } = 10;
         public string? SearchTerm { get; set; }
         public string? StatusFilter { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public string? SortBy { get; set; } = "CreatedAt";
-        public string? SortDirection { get; set; } = "desc";
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public AdminSortBy SortBy { get; set; } = AdminSortBy.DateCreated;
+        public AdminSortDirection SortDirection { get; set; } = AdminSortDirection.Descending;
     }
+
+    public enum AdminSortBy
+    {
+        DateCreated,
+        Total,
+    }
+
+    public enum AdminSortDirection
+    {
+        Ascending,
+        Descending,
+    }
+
 }
