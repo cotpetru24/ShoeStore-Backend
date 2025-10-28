@@ -29,22 +29,25 @@ namespace ShoeStore.Dto.Admin
     public class AdminOrderListDto
     {
         public List<AdminOrderDto> Orders { get; set; } = new List<AdminOrderDto>();
-        public int TotalCount { get; set; }
+        public int TotalQueryCount { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
+        public AdminOrdersStatsDto AdminOrdersStats { get; set; }
+
     }
 
-    //public class AdminOrderItemDto
-    //{
-    //    public int Id { get; set; }
-    //    public int ProductId { get; set; }
-    //    public string ProductName { get; set; } = null!;
-    //    public string? ProductImagePath { get; set; }
-    //    public int Quantity { get; set; }
-    //    public decimal UnitPrice { get; set; }
-    //    public decimal TotalPrice { get; set; }
-    //}
+    public class AdminOrdersStatsDto
+    {
+        public int TotalOrdersCount { get; set; }
+        public int TotalPendingOrdersCount { get; set; }
+        public int TotalProcessingOrdersCount { get; set; }
+        public int TotalDeliveredOrdersCount { get; set; }
+
+
+    }
+
+
 
     public class AdminShippingAddressDto
     {
@@ -125,17 +128,17 @@ namespace ShoeStore.Dto.Admin
         public string? StatusFilter { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
-        public AdminSortBy SortBy { get; set; } = AdminSortBy.DateCreated;
-        public AdminSortDirection SortDirection { get; set; } = AdminSortDirection.Descending;
+        public AdminOrderSortBy SortBy { get; set; } = AdminOrderSortBy.DateCreated;
+        public AdminOrderSortDirection SortDirection { get; set; } = AdminOrderSortDirection.Descending;
     }
 
-    public enum AdminSortBy
+    public enum AdminOrderSortBy
     {
         DateCreated,
         Total,
     }
 
-    public enum AdminSortDirection
+    public enum AdminOrderSortDirection
     {
         Ascending,
         Descending,

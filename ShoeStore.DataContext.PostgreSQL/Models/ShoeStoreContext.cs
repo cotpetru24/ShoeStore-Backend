@@ -461,6 +461,12 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                   .HasColumnName("last_name")
                   .IsRequired();
 
+            entity.Property(e => e.IsHidden)
+                  .HasColumnName("is_hidden");
+
+            entity.Property(e => e.IsBlocked)
+                  .HasColumnName("is_blocked");
+
             entity.Property(e => e.CreatedAt)
                   .HasColumnName("created_at")
                   .HasDefaultValueSql("CURRENT_TIMESTAMP")

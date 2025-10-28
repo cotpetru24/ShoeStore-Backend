@@ -176,21 +176,93 @@ namespace ShoeStore.Services
 
         #region Users
 
-        public async Task<AdminUserListDto> GetUsersAsync(int pageNumber = 1, int pageSize = 10, string? searchTerm = null)
+        public async Task<AdminUsersListDto> GetUsersAsync(GetAdminUsersRequestDto request)
         {
-            var query = _userManager.Users.AsQueryable();
+            var query = _context.UserDetails
+                .Include(u => u.AspNetUser)
+                .Where(u => !u.IsHidden)
+                .AsQueryable();
 
-            if (!string.IsNullOrEmpty(searchTerm))
+            if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                query = query.Where(u => u.Email!.Contains(searchTerm));
+                var term = request.SearchTerm.ToLower();
+
+                query = query.Where(o =>
+                    o.AspNetUserId.Contains(term)
+                    || (o.FirstName + " " + o.LastName).ToLower().Contains(term)
+                    || (o.AspNetUser != null && o.AspNetUser.Email.ToLower().Contains(term))
+                );
+
             }
 
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (request.UserStatus != null)
+            {
+                query = request.UserStatus == UserStatus.Blocked
+                        ? query.Where(u => u.IsBlocked == true)
+                        : query.Where(u => u.IsBlocked == false);
+            }
+
+
+            if (request.UserRole != null)
+            {
+                var roleName = request.UserRole == UserRole.Administrator
+                    ? "Administrator"
+                    : "Customer";
+
+                query =
+                    from d in query
+                    join ur in _context.UserRoles on d.AspNetUser.Id equals ur.UserId
+                    join r in _context.Roles on ur.RoleId equals r.Id
+                    where r.Name == roleName
+                    select d;
+            }
+
+
+
+            // Apply sorting
+            // Default sort by date if no SortBy provided
+            var sortBy = request.SortBy;
+            var sortDir = request.SortDirection;
+
+            IQueryable<UserDetail> sortedQuery = query;
+
+            switch (sortBy)
+            {
+                case AdminUserSortBy.Name:
+                    sortedQuery = sortDir == AdminUserSortDirection.Ascending
+                        ? query.OrderBy(u => u.FirstName)
+                        : query.OrderByDescending(u => u.FirstName);
+                    break;
+
+                case AdminUserSortBy.DateCreated:
+                    sortedQuery = sortDir == AdminUserSortDirection.Ascending
+                        ? query.OrderBy(u => u.CreatedAt)
+                        : query.OrderByDescending(u => u.CreatedAt);
+                    break;
+
+                default:
+                    sortedQuery = sortDir == AdminUserSortDirection.Ascending
+                        ? query.OrderBy(u => u.CreatedAt)
+                        : query.OrderByDescending(u => u.CreatedAt);
+                    break;
+            }
+
+            query = sortedQuery;
+
+
+
+
+
+
+
+            var totalQueryCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalQueryCount / request.PageSize);
+
+
 
             var users = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
                 .ToListAsync();
 
             var adminUsers = new List<AdminUserDto>();
@@ -198,15 +270,16 @@ namespace ShoeStore.Services
             // Get user details and roles for each user
             foreach (var user in users)
             {
-                var userDetail = await _context.UserDetails
-                    .FirstOrDefaultAsync(ud => ud.AspNetUserId == user.Id);
+                // Get the actual IdentityUser instance
+                var identityUser = user.AspNetUser;
 
-                var userRoles = await _userManager.GetRolesAsync(user);
+                // Fetch roles from Identity
+                var userRoles = await _userManager.GetRolesAsync(identityUser);
 
                 // Get user statistics
                 var userOrders = await _context.Orders
                     .Include(o => o.OrderStatus)
-                    .Where(o => o.UserId == user.Id)
+                    .Where(o => o.UserId == user.AspNetUserId)
                     .ToListAsync();
 
                 var totalOrders = userOrders.Count;
@@ -216,26 +289,50 @@ namespace ShoeStore.Services
 
                 adminUsers.Add(new AdminUserDto
                 {
-                    Id = user.Id,
-                    Email = user.Email!,
-                    FirstName = userDetail?.FirstName,
-                    LastName = userDetail?.LastName,
-                    EmailConfirmed = user.EmailConfirmed,
-                    LockoutEnabled = user.LockoutEnabled,
-                    LockoutEnd = user.LockoutEnd?.DateTime,
-                    AccessFailedCount = user.AccessFailedCount,
+                    Id = user.AspNetUserId,
+                    Email = identityUser.Email!,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    IsBlocked = user.IsBlocked,
+                    EmailConfirmed = identityUser.EmailConfirmed,
+                    LockoutEnabled = identityUser.LockoutEnabled,
+                    LockoutEnd = identityUser.LockoutEnd?.DateTime,
+                    AccessFailedCount = identityUser.AccessFailedCount,
                     TotalOrders = totalOrders,
                     TotalSpent = totalSpent,
+                    CreatedAt = user.CreatedAt,
                     Roles = userRoles.ToList()
                 });
             }
 
-            return new AdminUserListDto
+
+            //Admin users stats 
+            var totalUsersCount = await _context.UserDetails.CountAsync();
+            var totalActiveUsersCount = await _context.UserDetails
+                .Where(u => u.IsBlocked != true && u.IsHidden != true)
+                .CountAsync();
+            var totalBlockedUsersCount = await _context.UserDetails
+                .Where(u => u.IsBlocked == true)
+                .CountAsync();
+            var totalNewUsersCountThisMonth = await _context.UserDetails
+                .Where(u => u.CreatedAt >= new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc))
+                .CountAsync();
+
+
+            var stats = new AdminUsersStatsDto()
+            {
+                TotalUsersCount = totalUsersCount,
+                TotalActiveUsersCount = totalActiveUsersCount,
+                TotalBlockedUsersCount = totalBlockedUsersCount,
+                TotalNewUsersCountThisMonth = totalNewUsersCountThisMonth
+            };
+            return new AdminUsersListDto
             {
                 Users = adminUsers,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
+                AdminUsersStats = stats,
+                TotalQueryCount = totalQueryCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize,
                 TotalPages = totalPages
             };
         }
@@ -294,10 +391,11 @@ namespace ShoeStore.Services
             {
                 userDetail.FirstName = request.FirstName ?? userDetail.FirstName;
                 userDetail.LastName = request.LastName ?? userDetail.LastName;
+                userDetail.IsBlocked = request.IsBlocked ?? userDetail.IsBlocked;
             }
 
             // Update lockout settings
-            user.LockoutEnabled = request.LockoutEnabled;
+            user.LockoutEnabled = request.LockoutEnabled ?? user.LockoutEnabled;
             user.LockoutEnd = request.LockoutEnd;
 
             var updateResult = await _userManager.UpdateAsync(user);
@@ -351,23 +449,160 @@ namespace ShoeStore.Services
 
         public async Task<bool> DeleteUserAsync(string userId)
         {
+            var userDetail = await _context.UserDetails
+                .FirstOrDefaultAsync(ud => ud.AspNetUserId == userId);
+
+            if (userDetail == null)
+                return false;
+
+            userDetail.IsHidden = true;
+
+            var affected = await _context.SaveChangesAsync();
+            return affected > 0;
+        }
+
+
+        public async Task<bool> UpdateUserPasswordAsync(string userId, UpdateUserPasswordRequestDto request)
+        {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return false;
 
-            // Remove user details
-            var userDetail = await _context.UserDetails
-                .FirstOrDefaultAsync(ud => ud.AspNetUserId == userId);
-            if (userDetail != null)
+            // Remove current password
+            await _userManager.RemovePasswordAsync(user);
+
+            // Add new password
+            var result = await _userManager.AddPasswordAsync(user, request.NewPassword);
+            return result.Succeeded;
+        }
+
+        public async Task<AdminOrderListDto> GetUserOrdersAsync(GetUserOrdersRequestDto request)
+        {
+            var query = _context.Orders
+                .Include(o => o.OrderStatus)
+                .Include(o => o.ShippingAddress)
+                .Include(o => o.BillingAddress)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(o => o.Payments)
+                    .ThenInclude(p => p.PaymentMethod)
+                .Include(o => o.Payments)
+                    .ThenInclude(p => p.PaymentStatus)
+                .Include(o => o.UserDetail)
+                    .ThenInclude(u => u.AspNetUser)
+                .Where(o => o.UserId == request.UserId)
+                .AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(request.StatusFilter))
             {
-                _context.UserDetails.Remove(userDetail);
+                query = query.Where(o => o.OrderStatus!.Code == request.StatusFilter);
             }
 
-            // Delete user
-            var result = await _userManager.DeleteAsync(user);
-            if (!result.Succeeded) return false;
+            if (request.FromDate.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt >= request.FromDate);
+            }
 
-            await _context.SaveChangesAsync();
-            return true;
+            if (request.ToDate.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt <= request.ToDate);
+            }
+
+            // Sort by creation date descending by default
+            query = query.OrderByDescending(o => o.CreatedAt);
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
+
+            var orders = await query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToListAsync();
+
+            var adminOrders = new List<AdminOrderDto>();
+
+            // Populate order information
+            foreach (var order in orders)
+            {
+                var user = await _userManager.FindByIdAsync(order.UserId!);
+                var userDetail = await _context.UserDetails
+                    .FirstOrDefaultAsync(ud => ud.AspNetUserId == order.UserId);
+
+                var orderItems = order.OrderItems.Select(oi => new OrderItemDto
+                {
+                    Id = oi.Id,
+                    ProductId = oi.ProductId ?? 0,
+                    ProductName = oi.ProductName ?? "Unknown Product",
+                    ImagePath = oi.Product?.ImagePath,
+                    Quantity = oi.Quantity,
+                    ProductPrice = oi.ProductPrice,
+                    BrandName = oi.Product?.Brand?.Name
+                }).ToList();
+
+                var payment = order.Payments.Select(p => new AdminPaymentDto
+                {
+                    Id = p.Id,
+                    PaymentMethod = p.PaymentMethod?.DisplayName ?? "Unknown",
+                    PaymentStatusName = p.PaymentStatus?.DisplayName ?? "Unknown",
+                    Amount = p.Amount,
+                    TransactionId = p.TransactionId,
+                    CreatedAt = p.CreatedAt
+                }).FirstOrDefault();
+
+                adminOrders.Add(new AdminOrderDto
+                {
+                    Id = order.Id,
+                    UserId = order.UserId!,
+                    UserEmail = user?.Email ?? "",
+                    UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
+                    OrderStatusName = order.OrderStatus?.DisplayName,
+                    OrderStatusCode = order.OrderStatus?.Code,
+                    Subtotal = order.Subtotal,
+                    ShippingCost = order.ShippingCost,
+                    Discount = order.Discount,
+                    Total = order.Total,
+                    Notes = order.Notes,
+                    CreatedAt = order.CreatedAt,
+                    UpdatedAt = order.UpdatedAt,
+                    ShippingAddress = order.ShippingAddress != null ? new AdminShippingAddressDto
+                    {
+                        Id = order.ShippingAddress.Id,
+                        FirstName = "",
+                        LastName = "",
+                        AddressLine1 = order.ShippingAddress.AddressLine1,
+                        AddressLine2 = "",
+                        City = order.ShippingAddress.City,
+                        State = order.ShippingAddress.County,
+                        PostalCode = order.ShippingAddress.Postcode,
+                        Country = order.ShippingAddress.Country,
+                        PhoneNumber = ""
+                    } : null,
+                    BillingAddress = order.BillingAddress != null ? new AdminBillingAddressDto
+                    {
+                        Id = order.BillingAddress.Id,
+                        FirstName = "",
+                        LastName = "",
+                        AddressLine1 = order.BillingAddress.AddressLine1,
+                        AddressLine2 = "",
+                        City = order.BillingAddress.City,
+                        State = order.BillingAddress.County,
+                        PostalCode = order.BillingAddress.Postcode,
+                        Country = order.BillingAddress.Country,
+                        PhoneNumber = ""
+                    } : null,
+                    OrderItems = orderItems,
+                    Payment = payment
+                });
+            }
+
+            return new AdminOrderListDto
+            {
+                Orders = adminOrders,
+                TotalQueryCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize,
+                TotalPages = totalPages
+            };
         }
 
         #endregion
@@ -429,20 +664,20 @@ namespace ShoeStore.Services
 
             switch (sortBy)
             {
-                case AdminSortBy.Total:
-                    sortedQuery = sortDir == AdminSortDirection.Ascending
+                case AdminOrderSortBy.Total:
+                    sortedQuery = sortDir == AdminOrderSortDirection.Ascending
                         ? query.OrderBy(o => o.Total)
                         : query.OrderByDescending(o => o.Total);
                     break;
 
-                case AdminSortBy.DateCreated:
-                    sortedQuery = sortDir == AdminSortDirection.Ascending
+                case AdminOrderSortBy.DateCreated:
+                    sortedQuery = sortDir == AdminOrderSortDirection.Ascending
                         ? query.OrderBy(o => o.CreatedAt)
                         : query.OrderByDescending(o => o.CreatedAt);
                     break;
 
                 default:
-                    sortedQuery = sortDir == AdminSortDirection.Ascending
+                    sortedQuery = sortDir == AdminOrderSortDirection.Ascending
                         ? query.OrderBy(o => o.CreatedAt)
                         : query.OrderByDescending(o => o.CreatedAt);
                     break;
@@ -452,8 +687,8 @@ namespace ShoeStore.Services
 
 
 
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
+            var totalQueryCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalQueryCount / request.PageSize);
 
             var orders = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
@@ -536,10 +771,37 @@ namespace ShoeStore.Services
                 });
             }
 
+
+            //Add an enum for order status ids
+
+
+            //Admin orders stats 
+            var totalOrdersCount = await _context.Orders.CountAsync();
+            var totalPendingOrdersCount = await _context.Orders
+                .Where(o => o.OrderStatus!.Id == 1 )
+                .CountAsync();
+            var totalProcessingOrdersCount = await _context.Orders
+                .Where(o => o.OrderStatus!.Id == 2)
+                .CountAsync();
+            var totalDeliveredOrdersCount = await _context.Orders
+                .Where(o => o.OrderStatus!.Id == 4)
+                .CountAsync();
+
+
+            var stats = new AdminOrdersStatsDto()
+            {
+                TotalOrdersCount = totalOrdersCount,
+                TotalPendingOrdersCount = totalPendingOrdersCount,
+                TotalProcessingOrdersCount = totalProcessingOrdersCount,
+                TotalDeliveredOrdersCount = totalDeliveredOrdersCount
+            };
+
+
             return new AdminOrderListDto
             {
+                AdminOrdersStats = stats,
                 Orders = adminOrders,
-                TotalCount = totalCount,
+                TotalQueryCount = totalQueryCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize,
                 TotalPages = totalPages

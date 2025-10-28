@@ -38,17 +38,15 @@ namespace ShoeStore.Controllers
         #region Users
 
         [HttpGet("users")]
-        public async Task<IActionResult> GetUsersAsync(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? searchTerm = null)
+        public async Task<IActionResult> GetUsersAsync([FromQuery] GetAdminUsersRequestDto request)
         {
             try
             {
-                if (pageNumber < 1) pageNumber = 1;
-                if (pageSize < 1 || pageSize > 100) pageSize = 10;
+                if (request.PageNumber < 1) request.PageNumber = 1;
+                if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
 
-                var users = await _adminService.GetUsersAsync(pageNumber, pageSize, searchTerm);
+                //var users = await _adminService.GetUsersAsync(pageNumber, pageSize, searchTerm);
+                var users = await _adminService.GetUsersAsync(request);
                 return Ok(users);
             }
             catch (Exception ex)
@@ -139,6 +137,48 @@ namespace ShoeStore.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while deleting user", error = ex.Message });
+            }
+        }
+
+        [HttpPut("users/{userId}/password")]
+        public async Task<IActionResult> UpdateUserPasswordAsync(string userId, [FromBody] UpdateUserPasswordRequestDto request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var success = await _adminService.UpdateUserPasswordAsync(userId, request);
+                if (!success)
+                {
+                    return BadRequest(new { message = "Failed to update user password" });
+                }
+
+                return Ok(new { message = "User password updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating user password", error = ex.Message });
+            }
+        }
+
+        [HttpGet("users/{userId}/orders")]
+        public async Task<IActionResult> GetUserOrdersAsync(string userId, [FromQuery] GetUserOrdersRequestDto request)
+        {
+            try
+            {
+                if (request.PageNumber < 1) request.PageNumber = 1;
+                if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
+                request.UserId = userId;
+
+                var orders = await _adminService.GetUserOrdersAsync(request);
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching user orders", error = ex.Message });
             }
         }
 

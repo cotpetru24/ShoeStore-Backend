@@ -14,6 +14,8 @@ namespace ShoeStore.DataContext.PostgreSQL.Models
         public string LastName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public bool IsHidden { get; set; } 
+        public bool IsBlocked { get; set; } 
 
         public virtual IdentityUser AspNetUser { get; set; }
     }

@@ -19,5 +19,7 @@
         public string Status { get; set; } = null!;
 
         public string? PaymentMethod { get; set; }
+        public string? ReceiptUrl { get; set; }
+
     }
 }
