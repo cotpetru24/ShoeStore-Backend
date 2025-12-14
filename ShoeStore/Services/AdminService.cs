@@ -364,7 +364,9 @@ namespace ShoeStore.Services
                 AccessFailedCount = user.AccessFailedCount,
                 TotalOrders = totalOrders,
                 TotalSpent = totalSpent,
-                Roles = userRoles.ToList()
+                Roles = userRoles.ToList(),
+                IsBlocked = userDetail.IsBlocked,
+                CreatedAt = userDetail.CreatedAt,
             };
         }
 
