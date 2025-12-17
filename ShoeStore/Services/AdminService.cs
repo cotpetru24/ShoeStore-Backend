@@ -398,7 +398,10 @@ namespace ShoeStore.Services
 
             // Update lockout settings
             user.LockoutEnabled = request.LockoutEnabled ?? user.LockoutEnabled;
-            user.LockoutEnd = request.LockoutEnd;
+            user.LockoutEnd = request.LockoutEnd ?? user.LockoutEnd;
+
+            // Update email
+            user.Email = request.Email ?? user.Email;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded) return false;

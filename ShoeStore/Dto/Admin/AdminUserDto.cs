@@ -38,6 +38,7 @@ namespace ShoeStore.Dto.Admin
         public bool? LockoutEnabled { get; set; }
         public bool? IsBlocked { get; set; }
         public DateTime? LockoutEnd { get; set; }
+        public string? Email { get; set; }
         public List<string> Roles { get; set; } = new List<string>();
     }
 
@@ -57,7 +58,7 @@ namespace ShoeStore.Dto.Admin
 
     public class GetUserOrdersRequestDto
     {
-        public string UserId { get; set; } = null!;
+        public string? UserId { get; set; } = null!;
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public string? StatusFilter { get; set; }
