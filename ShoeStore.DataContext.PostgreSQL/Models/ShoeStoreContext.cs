@@ -318,6 +318,9 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.IsNew)
                 .HasDefaultValue(false)
                 .HasColumnName("is_new");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.OriginalPrice)
                 .HasPrecision(10, 2)

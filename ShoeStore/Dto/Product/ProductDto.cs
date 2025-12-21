@@ -28,6 +28,7 @@ namespace ShoeStore.Dto.Product
         public int? ReviewCount { get; set; } = null;
 
         public bool? IsNew { get; set; } = null;
+        public bool IsActive { get; set; } = true;
 
         public int? DiscountPercentage { get; set; } = null;
 

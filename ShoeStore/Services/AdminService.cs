@@ -936,56 +936,154 @@ namespace ShoeStore.Services
             // Apply filters
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                query = query.Where(p => p.Name.Contains(request.SearchTerm) ||
-                                       (p.Description != null && p.Description.Contains(request.SearchTerm)));
+                query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%") 
+                    || (p.Description != null && EF.Functions.ILike(p.Description, $"%{request.SearchTerm}%")));
             }
 
-            if (request.BrandId.HasValue)
+            if (request.IsActive != null)
             {
-                query = query.Where(p => p.BrandId == request.BrandId);
+                query = query.Where(p => p.IsActive == request.IsActive);
             }
 
-            if (request.AudienceId.HasValue)
+            if (request.ProductBrand != null)
             {
-                query = query.Where(p => p.AudienceId == request.AudienceId);
+                query = query.Where(p => EF.Functions.ILike(p.Brand.Name, request.ProductBrand));
             }
 
-            if (request.MinPrice.HasValue)
+            if (request.ProductCategory != null)
             {
-                query = query.Where(p => p.Price >= request.MinPrice);
+                var audiences = await _context.Audiences.ToListAsync();
+                query = query.Where(p => EF.Functions.ILike( p.Audience.DisplayName, request.ProductCategory));
             }
 
-            if (request.MaxPrice.HasValue)
+            if (request.ProductStockStatus != null)
             {
-                query = query.Where(p => p.Price <= request.MaxPrice);
+                var productStockStatus = AdminProductEnumMappings.MapAdminProductStockStatus(request.ProductStockStatus);
+
+                switch (productStockStatus)
+                { 
+                    case AdminProductStockStatus.LowStock:
+                        query = query.Where(p => p.Stock < 10 );
+                        break;
+                    case AdminProductStockStatus.HighStock:
+                        query = query.Where(p => p.Stock > 50);
+                        break;
+                    case AdminProductStockStatus.InStock:
+                        query = query.Where(p => p.Stock > 0);
+                        break;
+                    case AdminProductStockStatus.OutOfStock:
+                        query = query.Where(p => p.Stock <= 0);
+                        break;
+                    default:
+                        break;
+                }
             }
 
-            if (request.IsNew.HasValue)
+            if (!string.IsNullOrEmpty(request.SortBy))
             {
-                query = query.Where(p => p.IsNew == request.IsNew);
+                var sortBy = AdminProductEnumMappings.MapAdminProductsSortBy(request.SortBy);
+                var direction = AdminProductEnumMappings.MapAdminProductsSortDirection(request.SortDirection);
+
+                switch (sortBy)
+                {
+                    case AdminProductsSortBy.Name:
+                        query = direction == AdminProductsSortDirection.Ascending
+                            ? query.OrderBy(p => p.Name).ThenBy(p => p.Id)
+                            : query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id);
+                        break;
+                    case AdminProductsSortBy.Stock:
+                        query = direction == AdminProductsSortDirection.Ascending
+                            ? query.OrderBy(p => p.Stock).ThenBy(p => p.Id)
+                            : query.OrderByDescending(p => p.Stock).ThenByDescending(p => p.Id);
+                        break;
+
+                    case AdminProductsSortBy.DateCreated:
+                    default:
+                        query = direction == AdminProductsSortDirection.Ascending
+                            ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
+                            : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
+                        break;
+                }
             }
 
-            if (request.LowStock == true)
-            {
-                query = query.Where(p => p.Stock <= 10);
-            }
+            //if (request.MinPrice.HasValue)
+            //{
+            //    query = query.Where(p => p.Price >= request.MinPrice);
+            //}
 
-            // Apply sorting
-            query = request.SortBy?.ToLower() switch
-            {
-                "name" => request.SortDirection == "asc" ? query.OrderBy(p => p.Name) : query.OrderByDescending(p => p.Name),
-                "price" => request.SortDirection == "asc" ? query.OrderBy(p => p.Price) : query.OrderByDescending(p => p.Price),
-                "stock" => request.SortDirection == "asc" ? query.OrderBy(p => p.Stock) : query.OrderByDescending(p => p.Stock),
-                _ => request.SortDirection == "asc" ? query.OrderBy(p => p.CreatedAt) : query.OrderByDescending(p => p.CreatedAt)
-            };
+            //if (request.MaxPrice.HasValue)
+            //{
+            //    query = query.Where(p => p.Price <= request.MaxPrice);
+            //}
 
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
+            //if (request.IsNew.HasValue)
+            //{
+            //    query = query.Where(p => p.IsNew == request.IsNew);
+            //}
+
+            //if (request.LowStock == true)
+            //{
+            //    query = query.Where(p => p.Stock <= 10);
+            //}
+
+
+
+
+
+            //ProductStatus? status = request.Status?.ToLower() switch
+            //{
+            //    "active" => ProductStatus.Active,
+            //    "inactive" => ProductStatus.Inactive,
+            //    _ => null
+            //};
+
+            //ProductStockStatus? stockStatus = request.StockStatus?.ToLower() switch
+            //{
+            //    "low stock" => ProductStockStatus.LowStock,
+            //    "high stock" => ProductStockStatus.HighStock,
+            //    "in stock" => ProductStockStatus.InStock,
+            //    "out of stock" => ProductStockStatus.OutOfStock,
+            //    _ => null
+            //};
+
+            //if (status.HasValue)
+            //    query = query.Where(p => p.Status == status);
+
+            //if (stockStatus.HasValue)
+            //    query = query.Where(p => p.StockStatus == stockStatus);
+
+
+
+
+            //// Apply sorting
+            //query = request.SortBy?.ToLower() switch
+            //{
+            //    "createdat" => request.SortDirection == "asc"
+            //        ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
+            //        : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id),
+
+            //    "name" => request.SortDirection == "asc"
+            //        ? query.OrderBy(p => p.Name).ThenBy(p => p.Id)
+            //        : query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id),
+
+            //    _ => query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
+            //};
+
+
+            var totalQueryCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalQueryCount / request.PageSize);
+
+
+
 
             var products = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToListAsync();
+
+
+
+
 
             var adminProducts = new List<AdminProductDto>();
 
@@ -1012,7 +1110,7 @@ namespace ShoeStore.Services
                     BrandId = product.BrandId,
                     BrandName = product.Brand?.Name,
                     AudienceId = product.AudienceId,
-                    AudienceName = product.Audience?.DisplayName,
+                    Audience = product.Audience?.DisplayName,
                     Rating = product.Rating,
                     ReviewCount = product.ReviewCount,
                     IsNew = product.IsNew,
@@ -1024,13 +1122,40 @@ namespace ShoeStore.Services
                 });
             }
 
+
+            //Admin products stats 
+            var totalProductsCount = await _context.Products.CountAsync();
+            var totalActiveProductsCount = await _context.Products
+                .Where(p => p.IsActive == true)
+                .CountAsync();
+            var totalLowStockProductsCount = await _context.Products
+                .Where(p => p.Stock < 10)
+                .CountAsync();
+            var totalOutOfStockProductsCount = await _context.Products
+                .Where(p => p.Stock <= 0)
+                .CountAsync();
+
+            var stats = new AdminProductsStatsDto()
+            {
+                TotalProductsCount = totalProductsCount,
+                TotalLowStockProductsCount = totalLowStockProductsCount,
+                TotalOutOfStockProductsCount = totalOutOfStockProductsCount,
+                TotalActiveProductsCount = totalActiveProductsCount,
+            };
+
+            var allBrands = await _context.Brands
+                .Select(b => b.Name)
+                .ToArrayAsync();
+
             return new AdminProductListDto
             {
                 Products = adminProducts,
-                TotalCount = totalCount,
+                TotalQueryCount = totalQueryCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize,
-                TotalPages = totalPages
+                TotalPages = totalPages,
+                AdminProductsStats = stats,
+                AllBrands = allBrands
             };
         }
 
@@ -1056,7 +1181,7 @@ namespace ShoeStore.Services
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
                 AudienceId = product.AudienceId,
-                AudienceName = product.Audience?.DisplayName,
+                Audience = product.Audience?.DisplayName,
                 Rating = product.Rating,
                 ReviewCount = product.ReviewCount,
                 IsNew = product.IsNew,

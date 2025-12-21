@@ -29,6 +29,8 @@ public partial class Product
 
     public bool? IsNew { get; set; }
 
+    public bool IsActive { get; set; }
+
     public int? DiscountPercentage { get; set; }
 
     public DateTime CreatedAt { get; set; }

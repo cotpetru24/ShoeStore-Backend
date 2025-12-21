@@ -15,7 +15,7 @@ namespace ShoeStore.Dto.Admin
         public int? BrandId { get; set; }
         public string? BrandName { get; set; }
         public int? AudienceId { get; set; }
-        public string? AudienceName { get; set; }
+        public string? Audience { get; set; }
         public decimal? Rating { get; set; }
         public int? ReviewCount { get; set; }
         public bool? IsNew { get; set; }
@@ -29,10 +29,12 @@ namespace ShoeStore.Dto.Admin
     public class AdminProductListDto
     {
         public List<AdminProductDto> Products { get; set; } = new List<AdminProductDto>();
-        public int TotalCount { get; set; }
+        public int TotalQueryCount { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
+        public AdminProductsStatsDto AdminProductsStats { get; set; }
+        public string[] AllBrands { get; set; }
     }
 
     public class AdminProductSizeDto
@@ -98,13 +100,97 @@ namespace ShoeStore.Dto.Admin
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public string? SearchTerm { get; set; }
-        public int? BrandId { get; set; }
-        public int? AudienceId { get; set; }
-        public decimal? MinPrice { get; set; }
-        public decimal? MaxPrice { get; set; }
-        public bool? IsNew { get; set; }
-        public bool? LowStock { get; set; }
-        public string? SortBy { get; set; } = "CreatedAt";
-        public string? SortDirection { get; set; } = "desc";
+        public string? ProductBrand { get; set; }
+        public string? ProductCategory { get; set; }
+        public bool? IsActive { get; set; }
+        public string? ProductStockStatus {get; set;}
+        public string? SortBy { get; set; }
+        public string? SortDirection { get; set; }
+
+
+        //public decimal? MinPrice { get; set; }
+        //public decimal? MaxPrice { get; set; }
+        //public bool? IsNew { get; set; }
+        //public bool? LowStock { get; set; }
+
     }
+
+
+
+    public class AdminProductsStatsDto
+    {
+        public int TotalProductsCount { get; set; }
+        public int TotalLowStockProductsCount { get; set; }
+        public int TotalOutOfStockProductsCount { get; set; }
+        public int TotalActiveProductsCount { get; set; }
+    }
+
+
+
+
+    public enum AdminProductStockStatus
+    {
+        LowStock = 1,
+        HighStock = 2,
+        InStock = 3,
+        OutOfStock = 4
+    }
+
+    public enum AdminProductStatus
+    {
+        Active = 1,
+        Inactive = 2,
+    }
+
+    public enum AdminProductsSortBy
+    {
+        DateCreated = 1,
+        Name = 2,
+        Stock = 3
+    }
+
+    public enum AdminProductsSortDirection
+    {
+        Ascending = 1,
+        Descending = 2,
+    }
+
+    public static class AdminProductEnumMappings
+    {
+        public static AdminProductStatus? MapAdminProductStatus(string? value) =>
+            value?.ToLower() switch
+            {
+                "active" => AdminProductStatus.Active,
+                "inactive" => AdminProductStatus.Inactive,
+                _ => null
+            };
+
+        public static AdminProductStockStatus? MapAdminProductStockStatus(string? value) =>
+            value?.ToLower() switch
+            {
+                "low stock" => AdminProductStockStatus.LowStock,
+                "high stock" => AdminProductStockStatus.HighStock,
+                "in stock" => AdminProductStockStatus.InStock,
+                "out of stock" => AdminProductStockStatus.OutOfStock,
+                _ => null
+            };
+
+        public static AdminProductsSortBy? MapAdminProductsSortBy(string? value) =>
+            value?.ToLower() switch
+            {
+                "createdat" => AdminProductsSortBy.DateCreated,
+                "name" => AdminProductsSortBy.Name,
+                "stock" => AdminProductsSortBy.Stock,
+                _ => null
+            };
+
+        public static AdminProductsSortDirection? MapAdminProductsSortDirection(string? value) =>
+            value?.ToLower() switch
+            {
+                "asc" => AdminProductsSortDirection.Ascending,
+                "desc" => AdminProductsSortDirection.Descending,
+                _ => null
+            };
+    }
+
 }
