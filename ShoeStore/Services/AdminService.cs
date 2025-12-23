@@ -538,7 +538,7 @@ namespace ShoeStore.Services
                     Id = oi.Id,
                     ProductId = oi.ProductId ?? 0,
                     ProductName = oi.ProductName ?? "Unknown Product",
-                    ImagePath = oi.Product?.ImagePath,
+                    //ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
                     BrandName = oi.Product?.Brand?.Name
@@ -714,7 +714,7 @@ namespace ShoeStore.Services
                     Id = oi.Id,
                     ProductId = oi.ProductId ?? 0,
                     ProductName = oi.ProductName ?? "Unknown Product",
-                    ImagePath = oi.Product?.ImagePath,
+                    //ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
                     //BrandName=oi.Product.Brand.Name
@@ -783,7 +783,7 @@ namespace ShoeStore.Services
             //Admin orders stats 
             var totalOrdersCount = await _context.Orders.CountAsync();
             var totalPendingOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus!.Id == 1 )
+                .Where(o => o.OrderStatus!.Id == 1)
                 .CountAsync();
             var totalProcessingOrdersCount = await _context.Orders
                 .Where(o => o.OrderStatus!.Id == 2)
@@ -880,7 +880,7 @@ namespace ShoeStore.Services
                     Id = oi.Id,
                     ProductId = oi.ProductId ?? 0,
                     ProductName = oi.ProductName ?? "Unknown Product",
-                    ImagePath = oi.Product?.ImagePath,
+                    //ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
                     BrandName = oi.Product.Brand.Name
@@ -936,7 +936,7 @@ namespace ShoeStore.Services
             // Apply filters
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%") 
+                query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%")
                     || (p.Description != null && EF.Functions.ILike(p.Description, $"%{request.SearchTerm}%")));
             }
 
@@ -953,7 +953,7 @@ namespace ShoeStore.Services
             if (request.ProductCategory != null)
             {
                 var audiences = await _context.Audiences.ToListAsync();
-                query = query.Where(p => EF.Functions.ILike( p.Audience.DisplayName, request.ProductCategory));
+                query = query.Where(p => EF.Functions.ILike(p.Audience.DisplayName, request.ProductCategory));
             }
 
             if (request.ProductStockStatus != null)
@@ -961,9 +961,9 @@ namespace ShoeStore.Services
                 var productStockStatus = AdminProductEnumMappings.MapAdminProductStockStatus(request.ProductStockStatus);
 
                 switch (productStockStatus)
-                { 
+                {
                     case AdminProductStockStatus.LowStock:
-                        query = query.Where(p => p.Stock < 10 );
+                        query = query.Where(p => p.Stock < 10);
                         break;
                     case AdminProductStockStatus.HighStock:
                         query = query.Where(p => p.Stock > 50);
@@ -1105,7 +1105,7 @@ namespace ShoeStore.Services
                     Description = product.Description,
                     Price = product.Price,
                     OriginalPrice = product.OriginalPrice,
-                    ImagePath = product.ImagePath,
+                    //ImagePath = product.ImagePath,
                     Stock = product.Stock,
                     BrandId = product.BrandId,
                     BrandName = product.Brand?.Name,
@@ -1118,7 +1118,8 @@ namespace ShoeStore.Services
                     CreatedAt = product.CreatedAt,
                     UpdatedAt = product.UpdatedAt,
                     ProductSizes = productSizes,
-                    ProductImages = productImages
+                    ProductImages = productImages,
+                    IsActive = product.IsActive
                 });
             }
 
@@ -1159,12 +1160,39 @@ namespace ShoeStore.Services
             };
         }
 
+        public async Task<List<AdminBrandDto>> GetProductBrandsAsync()
+        {
+            var allBrands = await _context.Brands
+                .Select(b => new AdminBrandDto()
+                {
+                    BrandId = b.Id,
+                    BrandName = b.Name
+                })
+                .ToListAsync();
+
+            return allBrands;
+        }
+
+        public async Task<List<AdminAudienceDto>> GetProductAudienceAsync()
+        {
+            var allAudience = await _context.Audiences
+                .Select(a => new AdminAudienceDto()
+                {
+                    AudienceId = a.Id,
+                    AudienceName = a.DisplayName
+                })
+                .ToListAsync();
+
+            return allAudience;
+        }
+
         public async Task<AdminProductDto?> GetProductByIdAsync(int productId)
         {
             var product = await _context.Products
                 .Include(p => p.Brand)
                 .Include(p => p.Audience)
                 .Include(p => p.ProductSizes)
+                .Include(p => p.ProductFeatures)
                 .FirstOrDefaultAsync(p => p.Id == productId);
 
             if (product == null) return null;
@@ -1176,7 +1204,7 @@ namespace ShoeStore.Services
                 Description = product.Description,
                 Price = product.Price,
                 OriginalPrice = product.OriginalPrice,
-                ImagePath = product.ImagePath,
+                //ImagePath = product.ImagePath,
                 Stock = product.Stock,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
@@ -1188,46 +1216,72 @@ namespace ShoeStore.Services
                 DiscountPercentage = product.DiscountPercentage,
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt,
+                IsActive = product.IsActive,
                 ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
                 {
                     Id = ps.Id,
                     Size = $"{ps.UkSize} UK / {ps.UsSize} US / {ps.EuSize} EU",
                     Stock = ps.Stock
                 }).ToList(),
-                ProductImages = new List<AdminProductImageDto>() // ProductImages not available in current model
+                ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
+                ProductFeatures = product.ProductFeatures.Select(pf => new AdminProductFeatureDto()
+                {
+                    FeatureText = pf.FeatureText,
+                    SortOrder = pf.SortOrder,
+                    Id = pf.Id
+
+                })
+                .ToList()
+
+
             };
         }
 
-        public async Task<bool> CreateProductAsync(CreateProductRequestDto request)
+        public async Task<AdminProductDto> CreateProductAsync(AdminProductDto productToAdd)
         {
             var product = new Product
             {
-                Name = request.Name,
-                Description = request.Description,
-                Price = request.Price,
-                OriginalPrice = request.OriginalPrice,
-                ImagePath = request.ImagePath,
-                Stock = request.Stock,
-                BrandId = request.BrandId,
-                AudienceId = request.AudienceId,
-                IsNew = request.IsNew,
-                DiscountPercentage = request.DiscountPercentage,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                Name = productToAdd.Name,
+                Description = productToAdd.Description,
+                Price = productToAdd.Price,
+                BrandId = productToAdd.BrandId,
+                AudienceId = productToAdd.AudienceId,
+                DiscountPercentage = productToAdd.DiscountPercentage,
+                CreatedAt = DateTime.Now,
+                //UpdatedAt = null,
+                Stock = productToAdd.Stock,
+                IsNew = productToAdd.IsNew,
+                IsActive = productToAdd.IsActive
+
+
+                //OriginalPrice = productToAdd.OriginalPrice,
+                //ImagePath = request.ImagePath,
+
             };
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
+            if (productToAdd.ProductFeatures != null)
+            {
+                foreach (var featureToAdd in productToAdd.ProductFeatures)
+                {
+                    await _context.ProductFeatures.AddAsync(new ProductFeature
+                    {
+                        SortOrder = featureToAdd.SortOrder,
+                        FeatureText = featureToAdd.FeatureText,
+                        ProductId = product.Id
+                    });
+                }
+            }
+
             // Add product sizes
-            foreach (var sizeRequest in request.ProductSizes)
+            foreach (var sizeRequest in productToAdd.ProductSizes)
             {
                 var productSize = new ProductSize
                 {
                     ProductId = product.Id,
                     UkSize = 0, // Default values - would need to be parsed from sizeRequest.Size
-                    UsSize = 0,
-                    EuSize = 0,
                     Stock = sizeRequest.Stock
                 };
                 _context.ProductSizes.Add(productSize);
@@ -1236,25 +1290,90 @@ namespace ShoeStore.Services
             // ProductImages not available in current model - skip image creation
 
             await _context.SaveChangesAsync();
-            return true;
+
+
+            var response = new AdminProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                OriginalPrice = product.OriginalPrice,
+                //ImagePath = product.ImagePath,
+                Stock = product.Stock,
+                BrandId = product.BrandId,
+                BrandName = product.Brand?.Name,
+                AudienceId = product.AudienceId,
+                Audience = product.Audience?.DisplayName,
+                Rating = product.Rating,
+                ReviewCount = product.ReviewCount,
+                IsNew = product.IsNew,
+                DiscountPercentage = product.DiscountPercentage,
+                CreatedAt = product.CreatedAt,
+                UpdatedAt = product.UpdatedAt,
+                IsActive = product.IsActive,
+                //ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
+                //{
+                //    Id = ps.Id,
+                //    Size = $"{ps.UkSize} UK / {ps.UsSize} US / {ps.EuSize} EU",
+                //    Stock = ps.Stock
+                //}).ToList(),
+                ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
+                ProductFeatures = product.ProductFeatures.Select(pf => new AdminProductFeatureDto()
+                {
+                    FeatureText = pf.FeatureText,
+                    SortOrder = pf.SortOrder,
+                    Id = pf.Id
+
+                })
+                .ToList()
+             };
+            return response;
         }
 
-        public async Task<bool> UpdateProductAsync(int productId, UpdateProductRequestDto request)
+        public async Task<bool> UpdateProductAsync(int productId, AdminProductDto productToUpdate)
         {
             var product = await _context.Products.FindAsync(productId);
             if (product == null) return false;
 
-            product.Name = request.Name;
-            product.Description = request.Description;
-            product.Price = request.Price;
-            product.OriginalPrice = request.OriginalPrice;
-            product.ImagePath = request.ImagePath;
-            product.Stock = request.Stock;
-            product.BrandId = request.BrandId;
-            product.AudienceId = request.AudienceId;
-            product.IsNew = request.IsNew;
-            product.DiscountPercentage = request.DiscountPercentage;
-            product.UpdatedAt = DateTime.UtcNow;
+            product.Name = productToUpdate.Name;
+            product.IsActive = productToUpdate.IsActive;
+            product.Description = productToUpdate.Description;
+            product.Stock = productToUpdate.Stock;
+            product.Price = productToUpdate.Price;
+            product.DiscountPercentage = productToUpdate.DiscountPercentage;
+            product.UpdatedAt = DateTime.Now;
+            product.BrandId = productToUpdate.BrandId;
+
+            //need to get the id 
+            product.AudienceId = productToUpdate.AudienceId;
+
+
+            await _context.ProductFeatures
+                .Where(pf => pf.ProductId == productId)
+                .ExecuteDeleteAsync();
+
+            if (productToUpdate.ProductFeatures != null)
+            {
+                foreach (var featureToAdd in productToUpdate.ProductFeatures)
+                {
+                    await _context.ProductFeatures.AddAsync(new ProductFeature
+                    {
+                        SortOrder = featureToAdd.SortOrder,
+                        FeatureText = featureToAdd.FeatureText,
+                        ProductId = product.Id
+                    });
+                }
+            }
+
+
+
+
+            //dont think i need the original price prop
+            product.OriginalPrice = productToUpdate.OriginalPrice;
+            //product.ImagePath = request.ImagePath;
+
+            product.IsNew = productToUpdate.IsNew;
 
             await _context.SaveChangesAsync();
             return true;

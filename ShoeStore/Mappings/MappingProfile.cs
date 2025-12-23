@@ -30,7 +30,7 @@ namespace ShoeStore.Mappings
 
 
             CreateMap<OrderItem, OrderItemDto>()
-                .ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImagePath : string.Empty))
+                //.ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImagePath : string.Empty))
                 .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Product != null && src.Product.Brand != null ? src.Product.Brand.Name : string.Empty));
 
             // Payments mapping

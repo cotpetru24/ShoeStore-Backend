@@ -11,7 +11,7 @@ namespace ShoeStore.Dto.Admin
         public decimal Price { get; set; }
         public decimal? OriginalPrice { get; set; }
         public string? ImagePath { get; set; }
-        public int Stock { get; set; }
+        public int TotalStock => ProductSizes?.Sum(s => s.Stock) ?? 0;
         public int? BrandId { get; set; }
         public string? BrandName { get; set; }
         public int? AudienceId { get; set; }
@@ -19,9 +19,11 @@ namespace ShoeStore.Dto.Admin
         public decimal? Rating { get; set; }
         public int? ReviewCount { get; set; }
         public bool? IsNew { get; set; }
+        public bool IsActive { get; set; }
         public int? DiscountPercentage { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public List<AdminProductFeatureDto> ProductFeatures { get; set; } = new List<AdminProductFeatureDto>();
         public List<AdminProductSizeDto> ProductSizes { get; set; } = new List<AdminProductSizeDto>();
         public List<AdminProductImageDto> ProductImages { get; set; } = new List<AdminProductImageDto>();
     }
@@ -37,6 +39,14 @@ namespace ShoeStore.Dto.Admin
         public string[] AllBrands { get; set; }
     }
 
+    public class AdminProductFeatureDto
+    {
+        public int Id { get; set; }
+        public string FeatureText { get; set; } = null!;
+        public int SortOrder { get; set; }
+    }
+
+
     public class AdminProductSizeDto
     {
         public int Id { get; set; }
@@ -50,6 +60,19 @@ namespace ShoeStore.Dto.Admin
         public string ImagePath { get; set; } = null!;
         public bool IsPrimary { get; set; }
         public int SortOrder { get; set; }
+    }
+
+
+    public class AdminBrandDto
+    {
+        public int BrandId { get; set; }
+        public string BrandName { get; set; }
+    }
+
+    public class AdminAudienceDto
+    {
+        public int AudienceId { get; set; }
+        public string AudienceName { get; set; }
     }
 
     public class CreateProductRequestDto

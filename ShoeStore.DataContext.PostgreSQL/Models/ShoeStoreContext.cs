@@ -46,6 +46,7 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
     public virtual DbSet<UserDetail> UserDetails { get; set; }
 
     public virtual DbSet<ProductImage> ProductImages { get; set; }
+    public virtual DbSet<ProductFeature> ProductFeatures { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -314,7 +315,7 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.DiscountPercentage)
                 .HasDefaultValue(0)
                 .HasColumnName("discount_percentage");
-            entity.Property(e => e.ImagePath).HasColumnName("image_path");
+            //entity.Property(e => e.ImagePath).HasColumnName("image_path");
             entity.Property(e => e.IsNew)
                 .HasDefaultValue(false)
                 .HasColumnName("is_new");
@@ -351,6 +352,53 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                 .HasForeignKey(d => d.BrandId)
                 .HasConstraintName("products_brand_id_fkey");
         });
+
+        modelBuilder.Entity<ProductFeature>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("product_features_pkey");
+
+            entity.ToTable("product_features");
+
+            entity.Property(e => e.Id)
+                .UseIdentityAlwaysColumn()
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("created_at");
+            entity.Property(e => e.FeatureText).HasColumnName("feature_text");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("sort_order");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductFeatures)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_product_id");
+        });
+
+        modelBuilder.Entity<ProductImage>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("product_images_pkey");
+
+            entity.ToTable("product_images");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ImagePath).HasColumnName("image_path");
+            entity.Property(e => e.IsPrimary)
+                .HasDefaultValue(false)
+                .HasColumnName("is_primary");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("sort_order");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductImages)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_product_id");
+        });
+
 
         modelBuilder.Entity<ProductReview>(entity =>
         {

@@ -15,7 +15,7 @@ public partial class Product
 
     public decimal? OriginalPrice { get; set; }
 
-    public string? ImagePath { get; set; }
+    //public string? ImagePath { get; set; }
 
     public int Stock { get; set; }
 
@@ -42,6 +42,10 @@ public partial class Product
     public virtual Brand? Brand { get; set; }
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+    public virtual ICollection<ProductFeature> ProductFeatures { get; set; } = new List<ProductFeature>();
+
+    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 
     public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
 

@@ -117,6 +117,7 @@ namespace ShoeStore.Services
                 .Where(p => p.Id == productId)
                 .Include(p => p.Brand)
                 .Include(p => p.Audience)
+                //.Include(p=>p.ProductImages)
                 .FirstOrDefaultAsync();
 
             if (product != null)

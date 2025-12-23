@@ -266,6 +266,34 @@ namespace ShoeStore.Controllers
             }
         }
 
+        [HttpGet("products/brands")]
+        public async Task<IActionResult> GetProductBrandsAsync()
+        {
+            try
+            {
+                var brands = await _adminService.GetProductBrandsAsync();
+                return Ok(brands);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching brands", error = ex.Message });
+            }
+        }
+
+        [HttpGet("products/audience")]
+        public async Task<IActionResult> GetProductAudienceAsync()
+        {
+            try
+            {
+                var audience = await _adminService.GetProductAudienceAsync();
+                return Ok(audience);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching audience", error = ex.Message });
+            }
+        }
+
         [HttpGet("products/{productId}")]
         public async Task<IActionResult> GetProductByIdAsync(int productId)
         {
@@ -285,7 +313,7 @@ namespace ShoeStore.Controllers
         }
 
         [HttpPost("products")]
-        public async Task<IActionResult> CreateProductAsync([FromBody] CreateProductRequestDto request)
+        public async Task<IActionResult> CreateProductAsync([FromBody] AdminProductDto productToAdd)
         {
             try
             {
@@ -294,13 +322,13 @@ namespace ShoeStore.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var success = await _adminService.CreateProductAsync(request);
-                if (!success)
+                var response = await _adminService.CreateProductAsync(productToAdd);
+                if (response == null)
                 {
                     return BadRequest(new { message = "Failed to create product" });
                 }
 
-                return Ok(new { message = "Product created successfully" });
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -309,7 +337,7 @@ namespace ShoeStore.Controllers
         }
 
         [HttpPut("products/{productId}")]
-        public async Task<IActionResult> UpdateProductAsync(int productId, [FromBody] UpdateProductRequestDto request)
+        public async Task<IActionResult> UpdateProductAsync(int productId, [FromBody] AdminProductDto productToUpdate)
         {
             try
             {
@@ -318,7 +346,7 @@ namespace ShoeStore.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var success = await _adminService.UpdateProductAsync(productId, request);
+                var success = await _adminService.UpdateProductAsync(productId, productToUpdate);
                 if (!success)
                 {
                     return BadRequest(new { message = "Failed to update product" });
