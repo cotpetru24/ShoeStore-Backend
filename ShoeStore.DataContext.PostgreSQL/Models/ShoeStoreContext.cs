@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace ShoeStore.DataContext.PostgreSQL.Models;
 
@@ -315,13 +316,12 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.DiscountPercentage)
                 .HasDefaultValue(0)
                 .HasColumnName("discount_percentage");
-            //entity.Property(e => e.ImagePath).HasColumnName("image_path");
-            entity.Property(e => e.IsNew)
-                .HasDefaultValue(false)
-                .HasColumnName("is_new");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
+            entity.Property(e => e.IsNew)
+                .HasDefaultValue(false)
+                .HasColumnName("is_new");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.OriginalPrice)
                 .HasPrecision(10, 2)
@@ -336,9 +336,6 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.ReviewCount)
                 .HasDefaultValue(0)
                 .HasColumnName("review_count");
-            entity.Property(e => e.Stock)
-                .HasDefaultValue(0)
-                .HasColumnName("stock");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone")
@@ -434,28 +431,27 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
 
             entity.ToTable("product_sizes");
 
-            entity.HasIndex(e => new { e.ProductId, e.UkSize, e.UsSize, e.EuSize }, "product_sizes_product_id_uk_size_us_size_eu_size_key").IsUnique();
+            entity.HasIndex(e => e.Barcode, "uq_product_sizes_barcode").IsUnique();
+
+            entity.HasIndex(e => new { e.ProductId, e.UkSize }, "uq_product_sizes_product_uk_size").IsUnique();
+
+            entity.HasIndex(e => e.Sku, "uq_product_sizes_sku").IsUnique();
 
             entity.Property(e => e.Id)
                 .UseIdentityAlwaysColumn()
                 .HasColumnName("id");
-            entity.Property(e => e.EuSize)
-                .HasPrecision(3, 1)
-                .HasColumnName("eu_size");
+            entity.Property(e => e.Barcode).HasColumnName("barcode");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Sku).HasColumnName("sku");
             entity.Property(e => e.Stock)
                 .HasDefaultValue(0)
                 .HasColumnName("stock");
             entity.Property(e => e.UkSize)
                 .HasPrecision(3, 1)
                 .HasColumnName("uk_size");
-            entity.Property(e => e.UsSize)
-                .HasPrecision(3, 1)
-                .HasColumnName("us_size");
 
             entity.HasOne(d => d.Product).WithMany(p => p.ProductSizes)
                 .HasForeignKey(d => d.ProductId)
-                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("product_sizes_product_id_fkey");
         });
 
@@ -516,7 +512,7 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                   .HasColumnName("is_hidden");
 
             entity.Property(e => e.IsBlocked)
-                  .HasColumnName("is_blocked");
+                .HasColumnName("is_blocked");
 
             entity.Property(e => e.CreatedAt)
                   .HasColumnName("created_at")
@@ -526,7 +522,7 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
 
             entity.Property(e => e.UpdatedAt)
                   .HasColumnName("updated_at")
-                  .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
                   .ValueGeneratedOnAddOrUpdate()
                   .IsRequired();
 

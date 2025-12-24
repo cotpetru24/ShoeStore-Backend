@@ -83,9 +83,13 @@ namespace ShoeStore.Services
 
 
             var lowStockProducts = await _context.Products
-                .CountAsync(p => p.Stock > 0 && p.Stock <= 10);
+                .Include(p => p.ProductSizes)
+                .CountAsync(p =>
+                    p.ProductSizes.Sum(s => s.Stock) > 0 &&
+                    p.ProductSizes.Sum(s => s.Stock) <= 10);
+
             var outOfStockProducts = await _context.Products
-                .CountAsync(p => p.Stock == 0);
+                .CountAsync(p => p.ProductSizes.Sum(s => s.Stock) == 0);
 
 
             //Query to the latest 10 activities
@@ -963,20 +967,30 @@ namespace ShoeStore.Services
                 switch (productStockStatus)
                 {
                     case AdminProductStockStatus.LowStock:
-                        query = query.Where(p => p.Stock < 10);
+                        query = query.Where(p =>
+                            p.ProductSizes.Sum(s => s.Stock) > 0 &&
+                            p.ProductSizes.Sum(s => s.Stock) < 10);
                         break;
+
                     case AdminProductStockStatus.HighStock:
-                        query = query.Where(p => p.Stock > 50);
+                        query = query.Where(p =>
+                            p.ProductSizes.Sum(s => s.Stock) > 50);
                         break;
+
                     case AdminProductStockStatus.InStock:
-                        query = query.Where(p => p.Stock > 0);
+                        query = query.Where(p =>
+                            p.ProductSizes.Sum(s => s.Stock) > 0);
                         break;
+
                     case AdminProductStockStatus.OutOfStock:
-                        query = query.Where(p => p.Stock <= 0);
+                        query = query.Where(p =>
+                            p.ProductSizes.Sum(s => s.Stock) <= 0);
                         break;
+
                     default:
                         break;
                 }
+
             }
 
             if (!string.IsNullOrEmpty(request.SortBy))
@@ -991,10 +1005,11 @@ namespace ShoeStore.Services
                             ? query.OrderBy(p => p.Name).ThenBy(p => p.Id)
                             : query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id);
                         break;
+
                     case AdminProductsSortBy.Stock:
                         query = direction == AdminProductsSortDirection.Ascending
-                            ? query.OrderBy(p => p.Stock).ThenBy(p => p.Id)
-                            : query.OrderByDescending(p => p.Stock).ThenByDescending(p => p.Id);
+                            ? query.OrderBy(p => p.ProductSizes.Sum(s => s.Stock)).ThenBy(p => p.Id)
+                            : query.OrderByDescending(p => p.ProductSizes.Sum(s => s.Stock)).ThenByDescending(p => p.Id);
                         break;
 
                     case AdminProductsSortBy.DateCreated:
@@ -1004,6 +1019,7 @@ namespace ShoeStore.Services
                             : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
                         break;
                 }
+
             }
 
             //if (request.MinPrice.HasValue)
@@ -1092,7 +1108,7 @@ namespace ShoeStore.Services
                 var productSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
                 {
                     Id = ps.Id,
-                    Size = $"{ps.UkSize} UK / {ps.UsSize} US / {ps.EuSize} EU",
+                    Size = ps.UkSize,
                     Stock = ps.Stock
                 }).ToList();
 
@@ -1106,7 +1122,7 @@ namespace ShoeStore.Services
                     Price = product.Price,
                     OriginalPrice = product.OriginalPrice,
                     //ImagePath = product.ImagePath,
-                    Stock = product.Stock,
+                    //TotalStock = product.Stock,
                     BrandId = product.BrandId,
                     BrandName = product.Brand?.Name,
                     AudienceId = product.AudienceId,
@@ -1130,11 +1146,16 @@ namespace ShoeStore.Services
                 .Where(p => p.IsActive == true)
                 .CountAsync();
             var totalLowStockProductsCount = await _context.Products
-                .Where(p => p.Stock < 10)
+                .Where(p =>
+                    p.ProductSizes.Sum(s => s.Stock) > 0 &&
+                    p.ProductSizes.Sum(s => s.Stock) < 10)
                 .CountAsync();
+
             var totalOutOfStockProductsCount = await _context.Products
-                .Where(p => p.Stock <= 0)
+                .Where(p =>
+                    p.ProductSizes.Sum(s => s.Stock) <= 0)
                 .CountAsync();
+
 
             var stats = new AdminProductsStatsDto()
             {
@@ -1205,7 +1226,7 @@ namespace ShoeStore.Services
                 Price = product.Price,
                 OriginalPrice = product.OriginalPrice,
                 //ImagePath = product.ImagePath,
-                Stock = product.Stock,
+                //TotalStock = product.Stock,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
                 AudienceId = product.AudienceId,
@@ -1220,7 +1241,7 @@ namespace ShoeStore.Services
                 ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
                 {
                     Id = ps.Id,
-                    Size = $"{ps.UkSize} UK / {ps.UsSize} US / {ps.EuSize} EU",
+                    Size = ps.UkSize,
                     Stock = ps.Stock
                 }).ToList(),
                 ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
@@ -1249,7 +1270,7 @@ namespace ShoeStore.Services
                 DiscountPercentage = productToAdd.DiscountPercentage,
                 CreatedAt = DateTime.Now,
                 //UpdatedAt = null,
-                Stock = productToAdd.Stock,
+                //Stock = productToAdd.TotalStock,
                 IsNew = productToAdd.IsNew,
                 IsActive = productToAdd.IsActive
 
@@ -1300,7 +1321,7 @@ namespace ShoeStore.Services
                 Price = product.Price,
                 OriginalPrice = product.OriginalPrice,
                 //ImagePath = product.ImagePath,
-                Stock = product.Stock,
+                //Stock = product.Stock,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
                 AudienceId = product.AudienceId,
@@ -1339,7 +1360,7 @@ namespace ShoeStore.Services
             product.Name = productToUpdate.Name;
             product.IsActive = productToUpdate.IsActive;
             product.Description = productToUpdate.Description;
-            product.Stock = productToUpdate.Stock;
+            //product.Stock = productToUpdate.TotalStock;
             product.Price = productToUpdate.Price;
             product.DiscountPercentage = productToUpdate.DiscountPercentage;
             product.UpdatedAt = DateTime.Now;

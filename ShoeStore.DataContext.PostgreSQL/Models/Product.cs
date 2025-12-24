@@ -15,10 +15,6 @@ public partial class Product
 
     public decimal? OriginalPrice { get; set; }
 
-    //public string? ImagePath { get; set; }
-
-    public int Stock { get; set; }
-
     public int? BrandId { get; set; }
 
     public int? AudienceId { get; set; }
@@ -29,13 +25,13 @@ public partial class Product
 
     public bool? IsNew { get; set; }
 
-    public bool IsActive { get; set; }
-
     public int? DiscountPercentage { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public bool IsActive { get; set; }
 
     public virtual Audience? Audience { get; set; }
 
@@ -50,5 +46,4 @@ public partial class Product
     public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
 
     public virtual ICollection<ProductSize> ProductSizes { get; set; } = new List<ProductSize>();
-
 }

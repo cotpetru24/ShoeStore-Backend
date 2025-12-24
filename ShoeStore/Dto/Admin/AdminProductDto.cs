@@ -50,7 +50,7 @@ namespace ShoeStore.Dto.Admin
     public class AdminProductSizeDto
     {
         public int Id { get; set; }
-        public string Size { get; set; } = null!;
+        public decimal Size { get; set; }
         public int Stock { get; set; }
     }
 

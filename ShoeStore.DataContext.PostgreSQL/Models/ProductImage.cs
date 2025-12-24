@@ -1,25 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace ShoeStore.DataContext.PostgreSQL.Models
+namespace ShoeStore.DataContext.PostgreSQL.Models;
+
+public partial class ProductImage
 {
-    public partial class ProductImage
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public int ProductId { get; set; }
+    public int ProductId { get; set; }
 
-        public string ImagePath { get; set; } = null!;
+    public string ImagePath { get; set; } = null!;
 
-        public bool IsPrimary { get; set; }
+    public bool IsPrimary { get; set; }
 
-        public int SortOrder { get; set; }
+    public int SortOrder { get; set; }
 
-        public virtual Product Product { get; set; } = null!;
-    }
+    public virtual Product Product { get; set; } = null!;
 }

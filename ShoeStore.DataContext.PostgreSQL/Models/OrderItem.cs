@@ -17,7 +17,7 @@ public partial class OrderItem
 
     public int Quantity { get; set; }
 
-    public string? Size { get; set; }
+    public decimal Size { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
