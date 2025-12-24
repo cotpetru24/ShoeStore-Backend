@@ -931,18 +931,46 @@ namespace ShoeStore.Services
 
         public async Task<AdminProductListDto> GetProductsAsync(GetProductsRequestDto request)
         {
+            //var query = _context.Products
+            //    .Include(p => p.Brand)
+            //    .Include(p => p.Audience)
+            //    .Include(p => p.ProductSizes)
+            //    .Include(p=>p.ProductFeatures)
+            //    .AsQueryable();
+
+            //// Apply filters
+            //if (!string.IsNullOrEmpty(request.SearchTerm))
+            //{
+            //    query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%")
+            //        || (p.Description != null && EF.Functions.ILike(p.Description, $"%{request.SearchTerm}%"))
+            //        || (p.ProductSizes.Any(ps=> ps.Barcode.Contains(request.SearchTerm))
+            //        || (p.ProductFeatures.Any(pf=> pf.FeatureText.Contains(request.SearchTerm)));
+            //}
+
+
             var query = _context.Products
                 .Include(p => p.Brand)
                 .Include(p => p.Audience)
                 .Include(p => p.ProductSizes)
+                .Include(p => p.ProductFeatures)
                 .AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%")
-                    || (p.Description != null && EF.Functions.ILike(p.Description, $"%{request.SearchTerm}%")));
+                query = query.Where(p =>
+                    EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%")
+                    || (p.Description != null &&
+                        EF.Functions.ILike(p.Description, $"%{request.SearchTerm}%"))
+                    || p.ProductSizes.Any(ps =>
+                        ps.Barcode != null &&
+                        ps.Barcode.Contains(request.SearchTerm))
+                    || p.ProductFeatures.Any(pf =>
+                        pf.FeatureText != null &&
+                        pf.FeatureText.Contains(request.SearchTerm))
+                );
             }
+
 
             if (request.IsActive != null)
             {
@@ -1242,7 +1270,9 @@ namespace ShoeStore.Services
                 {
                     Id = ps.Id,
                     Size = ps.UkSize,
-                    Stock = ps.Stock
+                    Stock = ps.Stock,
+                    Barcode = ps.Barcode,
+                    Sku = ps.Sku
                 }).ToList(),
                 ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
                 ProductFeatures = product.ProductFeatures.Select(pf => new AdminProductFeatureDto()
@@ -1297,16 +1327,31 @@ namespace ShoeStore.Services
             }
 
             // Add product sizes
-            foreach (var sizeRequest in productToAdd.ProductSizes)
+            //foreach (var sizeRequest in productToAdd.ProductSizes)
+            //{
+            //    var productSize = new ProductSize
+            //    {
+            //        ProductId = product.Id,
+            //        UkSize = productToAdd.size, // Default values - would need to be parsed from sizeRequest.Size
+            //        Stock = sizeRequest.Stock
+            //    };
+            //    _context.ProductSizes.Add(productSize);
+            //}
+
+
+
+            foreach (var productSize in productToAdd.ProductSizes)
             {
-                var productSize = new ProductSize
+                _context.ProductSizes.Add(new ProductSize
                 {
                     ProductId = product.Id,
-                    UkSize = 0, // Default values - would need to be parsed from sizeRequest.Size
-                    Stock = sizeRequest.Stock
-                };
-                _context.ProductSizes.Add(productSize);
+                    UkSize = productSize.Size,
+                    Stock = productSize.Stock,
+                    Barcode = productSize.Barcode,
+                    Sku = $"{product.BrandId}-{productSize.Size}-{productSize.Barcode}"
+                });
             }
+
 
             // ProductImages not available in current model - skip image creation
 
@@ -1321,7 +1366,6 @@ namespace ShoeStore.Services
                 Price = product.Price,
                 OriginalPrice = product.OriginalPrice,
                 //ImagePath = product.ImagePath,
-                //Stock = product.Stock,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
                 AudienceId = product.AudienceId,
@@ -1333,12 +1377,14 @@ namespace ShoeStore.Services
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt,
                 IsActive = product.IsActive,
-                //ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
-                //{
-                //    Id = ps.Id,
-                //    Size = $"{ps.UkSize} UK / {ps.UsSize} US / {ps.EuSize} EU",
-                //    Stock = ps.Stock
-                //}).ToList(),
+                ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
+                {
+                    Id = ps.Id,
+                    Size = ps.UkSize,
+                    Stock = ps.Stock,
+                    Barcode = ps.Barcode,
+                    Sku = ps.Sku
+                }).ToList(),
                 ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
                 ProductFeatures = product.ProductFeatures.Select(pf => new AdminProductFeatureDto()
                 {
@@ -1348,7 +1394,7 @@ namespace ShoeStore.Services
 
                 })
                 .ToList()
-             };
+            };
             return response;
         }
 
@@ -1387,6 +1433,46 @@ namespace ShoeStore.Services
                 }
             }
 
+            var existingSizes = await _context.ProductSizes
+                .Where(ps => ps.ProductId == product.Id)
+                .ToListAsync();
+
+            if (productToUpdate.ProductSizes != null)
+            {
+                foreach (var incoming in productToUpdate.ProductSizes)
+                {
+                    var existing = existingSizes
+                        .FirstOrDefault(s => s.UkSize == incoming.Size);
+
+                    if (existing != null)
+                    {
+                        // UPDATE (only mutable fields)
+                        existing.Stock = incoming.Stock;
+                    }
+                    else
+                    {
+                        // INSERT
+                        _context.ProductSizes.Add(new ProductSize
+                        {
+                            ProductId = product.Id,
+                            UkSize = incoming.Size,
+                            Stock = incoming.Stock,
+                            Barcode = incoming.Barcode,
+                            Sku = $"{productToUpdate.BrandId}-{incoming.Size}-{incoming.Barcode}"
+                        });
+                    }
+                }
+
+                // DELETE removed sizes
+                var incomingSizes = productToUpdate.ProductSizes
+                    .Select(s => s.Size)
+                    .ToHashSet();
+
+                var sizesToDelete = existingSizes
+                    .Where(s => !incomingSizes.Contains(s.UkSize));
+
+                _context.ProductSizes.RemoveRange(sizesToDelete);
+            }
 
 
 
