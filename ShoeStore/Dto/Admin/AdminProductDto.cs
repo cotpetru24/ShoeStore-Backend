@@ -1,3 +1,4 @@
+using ShoeStore.Dto.Product;
 using System;
 using System.Collections.Generic;
 
@@ -23,9 +24,9 @@ namespace ShoeStore.Dto.Admin
         public int? DiscountPercentage { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public List<AdminProductFeatureDto> ProductFeatures { get; set; } = new List<AdminProductFeatureDto>();
-        public List<AdminProductSizeDto> ProductSizes { get; set; } = new List<AdminProductSizeDto>();
-        public List<AdminProductImageDto> ProductImages { get; set; } = new List<AdminProductImageDto>();
+        public List<ProductFeatureDto> ProductFeatures { get; set; } = new List<ProductFeatureDto>();
+        public List<ProductSizeDto> ProductSizes { get; set; } = new List<ProductSizeDto>();
+        public List<ProductImageDto> ProductImages { get; set; } = new List<ProductImageDto>();
     }
 
     public class AdminProductListDto
@@ -39,30 +40,12 @@ namespace ShoeStore.Dto.Admin
         public string[] AllBrands { get; set; }
     }
 
-    public class AdminProductFeatureDto
-    {
-        public int Id { get; set; }
-        public string FeatureText { get; set; } = null!;
-        public int SortOrder { get; set; }
-    }
 
 
-    public class AdminProductSizeDto
-    {
-        public int Id { get; set; }
-        public decimal Size { get; set; }
-        public int Stock { get; set; }
-        public string? Sku { get; set; }
-        public string Barcode { get; set; }
-    }
 
-    public class AdminProductImageDto
-    {
-        public int Id { get; set; }
-        public string ImagePath { get; set; } = null!;
-        public bool IsPrimary { get; set; }
-        public int SortOrder { get; set; }
-    }
+
+
+
 
 
     public class AdminBrandDto

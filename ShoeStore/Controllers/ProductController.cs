@@ -36,6 +36,22 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+        [HttpGet("featured")]
+        [ProducesResponseType(200, Type = typeof(GetProductsResposeDto))]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetfeaturedProductsAsync()
+        {
+            try
+            {
+                var products = await _service.GetfeaturedProductsAsync();
+
+                return Ok(products);
+            }
+            catch
+            {
+                return StatusCode(500, "Internal server error");
+            }
+        }
 
         [HttpGet("{productId}")]
         [ProducesResponseType(200, Type = typeof(ProductDto))]

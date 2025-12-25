@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
+using ShoeStore.Dto.Product;
 using System.Linq;
 using System.Security.Claims;
 
@@ -82,14 +83,29 @@ namespace ShoeStore.Services
                 .CountAsync();
 
 
+            //var lowStockProducts = await _context.Products
+            //    .Include(p => p.ProductSizes)
+            //    .CountAsync(p =>
+            //        p.ProductSizes.Sum(s => s.Stock) > 0 &&
+            //        p.ProductSizes.Sum(s => s.Stock) <= 10);
+
+            //var outOfStockProducts = await _context.Products
+            //    .CountAsync(p => p.ProductSizes.Sum(s => s.Stock) == 0);
+
             var lowStockProducts = await _context.Products
-                .Include(p => p.ProductSizes)
-                .CountAsync(p =>
-                    p.ProductSizes.Sum(s => s.Stock) > 0 &&
-                    p.ProductSizes.Sum(s => s.Stock) <= 10);
+    .Select(p => new
+    {
+        TotalStock = p.ProductSizes.Sum(s => (int?)s.Stock) ?? 0
+    })
+    .CountAsync(p => p.TotalStock > 0 && p.TotalStock <= 10);
 
             var outOfStockProducts = await _context.Products
-                .CountAsync(p => p.ProductSizes.Sum(s => s.Stock) == 0);
+                .Select(p => new
+                {
+                    TotalStock = p.ProductSizes.Sum(s => (int?)s.Stock) ?? 0
+                })
+                .CountAsync(p => p.TotalStock == 0);
+
 
 
             //Query to the latest 10 activities
@@ -1133,14 +1149,14 @@ namespace ShoeStore.Services
 
             foreach (var product in products)
             {
-                var productSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
+                var productSizes = product.ProductSizes.Select(ps => new ProductSizeDto
                 {
                     Id = ps.Id,
                     Size = ps.UkSize,
                     Stock = ps.Stock
                 }).ToList();
 
-                var productImages = new List<AdminProductImageDto>(); // ProductImages not available in current model
+                var productImages = new List<ProductImageDto>(); // ProductImages not available in current model
 
                 adminProducts.Add(new AdminProductDto
                 {
@@ -1266,7 +1282,7 @@ namespace ShoeStore.Services
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt,
                 IsActive = product.IsActive,
-                ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
+                ProductSizes = product.ProductSizes.Select(ps => new ProductSizeDto
                 {
                     Id = ps.Id,
                     Size = ps.UkSize,
@@ -1274,8 +1290,8 @@ namespace ShoeStore.Services
                     Barcode = ps.Barcode,
                     Sku = ps.Sku
                 }).ToList(),
-                ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
-                ProductFeatures = product.ProductFeatures.Select(pf => new AdminProductFeatureDto()
+                ProductImages = new List<ProductImageDto>(), // ProductImages not available in current model
+                ProductFeatures = product.ProductFeatures.Select(pf => new ProductFeatureDto()
                 {
                     FeatureText = pf.FeatureText,
                     SortOrder = pf.SortOrder,
@@ -1377,7 +1393,7 @@ namespace ShoeStore.Services
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt,
                 IsActive = product.IsActive,
-                ProductSizes = product.ProductSizes.Select(ps => new AdminProductSizeDto
+                ProductSizes = product.ProductSizes.Select(ps => new ProductSizeDto
                 {
                     Id = ps.Id,
                     Size = ps.UkSize,
@@ -1385,8 +1401,8 @@ namespace ShoeStore.Services
                     Barcode = ps.Barcode,
                     Sku = ps.Sku
                 }).ToList(),
-                ProductImages = new List<AdminProductImageDto>(), // ProductImages not available in current model
-                ProductFeatures = product.ProductFeatures.Select(pf => new AdminProductFeatureDto()
+                ProductImages = new List<ProductImageDto>(), // ProductImages not available in current model
+                ProductFeatures = product.ProductFeatures.Select(pf => new ProductFeatureDto()
                 {
                     FeatureText = pf.FeatureText,
                     SortOrder = pf.SortOrder,

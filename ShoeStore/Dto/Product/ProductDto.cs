@@ -15,9 +15,9 @@ namespace ShoeStore.Dto.Product
 
         public decimal? OriginalPrice { get; set; } = null;
 
-        public string? ImagePath { get; set; } = null;
+        //public string? ImagePath { get; set; } = null;
 
-        public int Stock { get; set; }
+        public int TotalStock { get; set; }
 
         public string BrandName { get; set; } = string.Empty;
 
@@ -30,7 +30,13 @@ namespace ShoeStore.Dto.Product
         public bool? IsNew { get; set; } = null;
         public bool IsActive { get; set; } = true;
 
-        public int? DiscountPercentage { get; set; } = null;
+        public decimal? DiscountPercentage { get; set; } = null;
+
+        public List<ProductImageDto> ProductImages { get; set; } = new List<ProductImageDto>();
+
+        public List<ProductSizeDto> ProductSizes { get; set; } = new List<ProductSizeDto>();
+
+        public List<ProductFeatureDto> ProductFeatures { get; set; } = new List<ProductFeatureDto>();
 
     }
 }
