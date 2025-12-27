@@ -49,6 +49,12 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
     public virtual DbSet<ProductImage> ProductImages { get; set; }
     public virtual DbSet<ProductFeature> ProductFeatures { get; set; }
 
+    public virtual DbSet<CmsCategory> CmsCategories { get; set; }
+
+    public virtual DbSet<CmsFeature> CmsFeatures { get; set; }
+
+    public virtual DbSet<CmsProfile> CmsProfiles { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -541,6 +547,107 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.ImagePath).HasColumnName("image_path");
         });
+
+        modelBuilder.Entity<CmsCategory>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("cms_categories_pkey");
+
+            entity.ToTable("cms_categories");
+
+            entity.HasIndex(e => new { e.ProfileId, e.SortOrder, e.Id }, "ix_cms_categories_profile_sort");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.ImageBase64).HasColumnName("image_base64");
+            entity.Property(e => e.ItemTagline).HasColumnName("item_tagline");
+            entity.Property(e => e.ProfileId).HasColumnName("profile_id");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("sort_order");
+            entity.Property(e => e.Title).HasColumnName("title");
+
+            entity.HasOne(d => d.Profile).WithMany(p => p.CmsCategories)
+                .HasForeignKey(d => d.ProfileId)
+                .HasConstraintName("cms_categories_profile_id_fkey");
+        });
+
+        modelBuilder.Entity<CmsFeature>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("cms_features_pkey");
+
+            entity.ToTable("cms_features");
+
+            entity.HasIndex(e => new { e.ProfileId, e.SortOrder, e.Id }, "ix_cms_features_profile_sort");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.IconClass).HasColumnName("icon_class");
+            entity.Property(e => e.ProfileId).HasColumnName("profile_id");
+            entity.Property(e => e.SortOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("sort_order");
+            entity.Property(e => e.Title).HasColumnName("title");
+
+            entity.HasOne(d => d.Profile).WithMany(p => p.CmsFeatures)
+                .HasForeignKey(d => d.ProfileId)
+                .HasConstraintName("cms_features_profile_id_fkey");
+        });
+
+        modelBuilder.Entity<CmsProfile>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("cms_profiles_pkey");
+
+            entity.ToTable("cms_profiles");
+
+            entity.HasIndex(e => e.Name, "cms_profiles_name_key").IsUnique();
+
+            entity.HasIndex(e => e.IsActive, "ux_cms_profiles_single_active")
+                .IsUnique()
+                .HasFilter("(is_active = true)");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("created_at");
+            entity.Property(e => e.FaviconBase64).HasColumnName("favicon_base64");
+            entity.Property(e => e.FooterBg).HasColumnName("footer_bg");
+            entity.Property(e => e.FooterLink).HasColumnName("footer_link");
+            entity.Property(e => e.FooterText).HasColumnName("footer_text");
+            entity.Property(e => e.HeroBgBase64).HasColumnName("hero_bg_base64");
+            entity.Property(e => e.HeroDescription).HasColumnName("hero_description");
+            entity.Property(e => e.HeroPrimaryBtn).HasColumnName("hero_primary_btn");
+            entity.Property(e => e.HeroSecondaryBtn).HasColumnName("hero_secondary_btn");
+            entity.Property(e => e.HeroSubtitle).HasColumnName("hero_subtitle");
+            entity.Property(e => e.HeroTitle).HasColumnName("hero_title");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(false)
+                .HasColumnName("is_active");
+            entity.Property(e => e.LogoBase64).HasColumnName("logo_base64");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.NavbarBg).HasColumnName("navbar_bg");
+            entity.Property(e => e.NavbarLink).HasColumnName("navbar_link");
+            entity.Property(e => e.NavbarText).HasColumnName("navbar_text");
+            entity.Property(e => e.NewsletterButtonText).HasColumnName("newsletter_button_text");
+            entity.Property(e => e.NewsletterDescription).HasColumnName("newsletter_description");
+            entity.Property(e => e.NewsletterTitle).HasColumnName("newsletter_title");
+            entity.Property(e => e.ShowLogoInHeader)
+                .HasDefaultValue(true)
+                .HasColumnName("show_logo_in_header");
+            entity.Property(e => e.SiteName).HasColumnName("site_name");
+            entity.Property(e => e.Tagline).HasColumnName("tagline");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("updated_at");
+        });
+
+
+
 
         OnModelCreatingPartial(modelBuilder);
     }
