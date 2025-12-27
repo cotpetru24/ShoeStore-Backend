@@ -8,7 +8,7 @@ namespace ShoeStore.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Roles = "Administrator")]
-    public class AdminController : Controller
+    public class AdminController : ControllerBase
     {
         private readonly AdminService _adminService;
 
