@@ -37,8 +37,6 @@ public partial class Product
 
     public virtual Brand? Brand { get; set; }
 
-    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-
     public virtual ICollection<ProductFeature> ProductFeatures { get; set; } = new List<ProductFeature>();
 
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();

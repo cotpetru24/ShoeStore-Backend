@@ -7,7 +7,7 @@
         public string Title { get; set; } = null!;
         public string Description { get; set; } = null!;
         public string? ImageBase64 { get; set; }
-        public string? ItemCountText { get; set; }
+        public string? ItemTagline { get; set; }
         public int SortOrder { get; set; }
     }
 

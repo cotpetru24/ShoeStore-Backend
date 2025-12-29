@@ -507,7 +507,8 @@ namespace ShoeStore.Services
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                    .ThenInclude(ps => ps.ProductSize)
+                    .ThenInclude(p => p.Product)
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payments)
@@ -556,12 +557,12 @@ namespace ShoeStore.Services
                 var orderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
-                    ProductId = oi.ProductId ?? 0,
+                    ProductId = oi.ProductSize.ProductId,
                     ProductName = oi.ProductName ?? "Unknown Product",
                     //ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
-                    BrandName = oi.Product?.Brand?.Name
+                    BrandName = oi.ProductSize.Product?.Brand?.Name
                 }).ToList();
 
                 var payment = order.Payments.Select(p => new AdminPaymentDto
@@ -641,7 +642,8 @@ namespace ShoeStore.Services
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                    .ThenInclude(ps => ps.ProductSize)
+                    .ThenInclude(p => p.Product)
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payments)
@@ -732,7 +734,7 @@ namespace ShoeStore.Services
                 var orderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
-                    ProductId = oi.ProductId ?? 0,
+                    ProductId = oi.ProductSize.ProductId,
                     ProductName = oi.ProductName ?? "Unknown Product",
                     //ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
@@ -840,7 +842,8 @@ namespace ShoeStore.Services
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                    .ThenInclude(ps => ps.ProductSize)
+                    .ThenInclude(p => p.Product)
                     .ThenInclude(p => p.Brand)
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentMethod)
@@ -898,12 +901,12 @@ namespace ShoeStore.Services
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
-                    ProductId = oi.ProductId ?? 0,
+                    ProductId = oi.ProductSize.ProductId,
                     ProductName = oi.ProductName ?? "Unknown Product",
                     //ImagePath = oi.Product?.ImagePath,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
-                    BrandName = oi.Product.Brand.Name
+                    BrandName = oi.ProductSize.Product.Brand.Name
 
                 }).ToList(),
                 Payment = order.Payments.Select(p => new AdminPaymentDto

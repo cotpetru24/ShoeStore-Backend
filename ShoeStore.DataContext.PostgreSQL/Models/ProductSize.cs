@@ -17,5 +17,7 @@ public partial class ProductSize
 
     public string Sku { get; set; } = null!;
 
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
     public virtual Product Product { get; set; } = null!;
 }

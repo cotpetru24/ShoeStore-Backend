@@ -8,6 +8,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\children-blue.png" />
+    <None Remove="Assets\hero_section.png" />
+    <None Remove="Assets\nike-sneaker-white.png" />
+    <None Remove="Assets\nike-yellow.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\children-blue.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\hero_section.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\nike-sneaker-white.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\nike-yellow.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.0" /> 
     <PackageReference Include="AutoMapper" Version="15.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.13" />

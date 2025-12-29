@@ -139,12 +139,18 @@ namespace ShoeStore
                 await authService.SeedAdminAccount();
             }
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            using (var scope = app.Services.CreateScope())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                var cmsSevice = scope.ServiceProvider.GetRequiredService<CmsService>();
+                await cmsSevice.SeedDefaultProfile();
             }
+
+                // Configure the HTTP request pipeline.
+                if (app.Environment.IsDevelopment())
+                {
+                    app.UseSwagger();
+                    app.UseSwaggerUI();
+                }
 
             app.UseHttpsRedirection();
             app.UseCors("FrontEnd");

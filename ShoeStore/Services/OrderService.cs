@@ -180,15 +180,15 @@ namespace ShoeStore.Services
                         throw new ArgumentException($"Product with ID {item.ProductId} not found");
 
                     var productSize = product.ProductSizes
-                        .FirstOrDefault(s => s.UkSize == item.Size);
+                        .FirstOrDefault(s => s.Barcode == item.ProductSizeBarcode);
 
                     if (productSize == null)
                         throw new ArgumentException(
-                            $"Size {item.Size} not found for product {product.Name}");
+                            $"Size {item.ProductSizeBarcode} not found for product {product.Name}");
 
                     if (productSize.Stock < item.Quantity)
                         throw new ArgumentException(
-                            $"Insufficient stock for product {product.Name}, size {item.Size}. " +
+                            $"Insufficient stock for product {product.Name}, size {item.ProductSizeBarcode}. " +
                             $"Available: {productSize.Stock}, Requested: {item.Quantity}");
 
                     // Reduce stock at SIZE level
@@ -196,12 +196,16 @@ namespace ShoeStore.Services
 
                     var orderItem = new OrderItem
                     {
-                        ProductId = product.Id,
                         ProductName = product.Name,
                         ProductPrice = product.Price,
                         Quantity = item.Quantity,
-                        Size = item.Size,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+
+
+
+
+                        //--------- amend the front end to send the ProductSizeId instead of Size -----------
+                        ProductSizeId = product.ProductSizes.First(ps => ps.Barcode == item.ProductSizeBarcode).Id
                     };
 
                     orderItems.Add(orderItem);
@@ -303,8 +307,9 @@ namespace ShoeStore.Services
                 .Where(o => o.Id == orderId && o.UserId == userId)
                 .Include(o => o.OrderStatus)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
-                        .ThenInclude(p => p.Brand)
+                    .ThenInclude(ps => ps.ProductSize)
+                    .ThenInclude(p => p.Product)
+                    .ThenInclude(p => p.Brand)
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.Payments)

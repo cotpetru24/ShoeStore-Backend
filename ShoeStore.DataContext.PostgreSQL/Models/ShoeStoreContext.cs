@@ -163,6 +163,8 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
 
             entity.ToTable("order_items");
 
+            entity.HasIndex(e => e.ProductSizeId, "fki_order_items_product_sizes_id_fkey");
+
             entity.Property(e => e.Id)
                 .UseIdentityAlwaysColumn()
                 .HasColumnName("id");
@@ -171,22 +173,24 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.ProductName).HasColumnName("product_name");
             entity.Property(e => e.ProductPrice)
                 .HasPrecision(10, 2)
                 .HasColumnName("product_price");
+            entity.Property(e => e.ProductSizeId)
+                .HasDefaultValue(19)
+                .HasColumnName("product_size_id");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
-            entity.Property(e => e.Size).HasColumnName("size");
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("order_items_order_id_fkey");
 
-            entity.HasOne(d => d.Product).WithMany(p => p.OrderItems)
-                .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("order_items_product_id_fkey");
+            entity.HasOne(d => d.ProductSize).WithMany(p => p.OrderItems)
+                .HasForeignKey(d => d.ProductSizeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("order_items_product_sizes_id_fkey");
         });
 
         modelBuilder.Entity<OrderStatus>(entity =>
@@ -610,6 +614,15 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
             entity.HasIndex(e => e.IsActive, "ux_cms_profiles_single_active")
                 .IsUnique()
                 .HasFilter("(is_active = true)");
+
+            entity.Property(e => e.IsDefault)
+                .HasDefaultValue(false)
+                .HasColumnName("is_default");
+
+
+            entity.HasIndex(e => e.IsDefault, "ux_cms_profiles_single_default")
+                .IsUnique()
+                .HasFilter("(is_default = true)");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)

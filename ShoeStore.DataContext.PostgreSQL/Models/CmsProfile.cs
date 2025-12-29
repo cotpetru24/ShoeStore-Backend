@@ -11,6 +11,8 @@ public partial class CmsProfile
 
     public bool IsActive { get; set; }
 
+    public bool IsDefault { get; set; }
+
     public string SiteName { get; set; } = null!;
 
     public string? Tagline { get; set; }

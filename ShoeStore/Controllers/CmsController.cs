@@ -16,7 +16,79 @@ namespace ShoeStore.Controllers
             _cmsService = cmsService;
         }
 
+
+
+
+        [HttpGet("navAndFooter")]
+        public async Task<IActionResult> GetCmsNavAndFooterAsync()
+        {
+
+            try
+            {
+                var response = await _cmsService.GetCmsNavAndFooterAsync();
+
+                if (response == null)
+                {
+                    return StatusCode(500, "Failed to get nav and footer.");
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while getting nav and footer", error = ex.Message });
+            }
+        }
+
+
+        [HttpGet("landing")]
+        public async Task<IActionResult> GetCmsLandingPageAsync()
+        {
+
+            try
+            {
+                var response = await _cmsService.GetCmsLandingPageAsync();
+
+                if (response == null)
+                {
+                    return StatusCode(500, "Failed to get landing.");
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while getting landing", error = ex.Message });
+            }
+        }
+
+
+        //[HttpGet("active")]
+        //public async Task<IActionResult> GetCmsActiveProfileAsync()
+        //{
+
+        //    try
+        //    {
+        //        var response = await _cmsService.GetCmsActiveProfileAsync();
+
+        //        if (response == null)
+        //        {
+        //            return StatusCode(500, "Failed to get active CMS profile.");
+        //        }
+
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new { message = "An error occurred while getting the active profile", error = ex.Message });
+        //    }
+        //}
+
+
+
+
         [HttpGet("profiles")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> GetCmsProfilesAsync()
         {
 
@@ -34,28 +106,6 @@ namespace ShoeStore.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while getting CMS profiles", error = ex.Message });
-            }
-        }
-
-
-        [HttpGet("active")]
-        public async Task<IActionResult> GetCmsActiveProfileAsync()
-        {
-
-            try
-            {
-                var response = await _cmsService.GetCmsActiveProfileAsync();
-
-                if (response == null)
-                {
-                    return StatusCode(500, "Failed to get active CMS profile.");
-                }
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while getting the active profile", error = ex.Message });
             }
         }
 
