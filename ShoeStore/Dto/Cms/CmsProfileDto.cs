@@ -27,8 +27,7 @@
         public string HeroDescription { get; set; } = null!;
         public string HeroPrimaryButtonText { get; set; } = null!;
         public string HeroSecondaryButtonText { get; set; } = null!;
-        public string? HeroBackgroundImageBase64 { get; set; }
-
+        public string? HeroBackgroundImageBase64 { get; set; } = null;
 
         public List<CmsFeatureDto> Features { get; set; } = new();
         public List<CmsCategoryDto> Categories { get; set; } = new();
