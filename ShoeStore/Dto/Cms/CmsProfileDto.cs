@@ -11,6 +11,7 @@
         public string? Tagline { get; set; }
         public string? LogoBase64 { get; set; }
         public string? FaviconBase64 { get; set; }
+        public bool ShowLogoInHeader { get; set; }
 
         // Colors
         public string NavbarBgColor { get; set; } = "#ffffff";

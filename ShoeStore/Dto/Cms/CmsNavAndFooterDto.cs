@@ -11,6 +11,10 @@
         public string FooterLinkColor { get; set; } = "#17a2b8";
 
         public string WebsiteName { get; set; }
+        public string WebsiteLogo { get; set; }
+        public bool ShowLogo { get; set; }
+
+        public string Favicon { get; set; }
 
 
     }

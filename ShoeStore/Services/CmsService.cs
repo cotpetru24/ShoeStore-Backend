@@ -164,6 +164,10 @@ namespace ShoeStore.Services
                 NavbarTextColor = activeProfile.NavbarText,
 
                 WebsiteName = activeProfile.SiteName,
+                WebsiteLogo = activeProfile.LogoBase64,
+                ShowLogo = activeProfile.ShowLogoInHeader,
+
+                Favicon = activeProfile.FaviconBase64
             };
         }
 
@@ -282,6 +286,7 @@ namespace ShoeStore.Services
                 Tagline = profile.Tagline,
                 LogoBase64 = profile.LogoBase64,
                 FaviconBase64 = profile.FaviconBase64,
+                ShowLogoInHeader = profile.ShowLogoInHeader,
                 NavbarBgColor = profile.NavbarBg,
                 NavbarTextColor = profile.NavbarText,
                 NavbarLinkColor = profile.NavbarLink,
@@ -310,6 +315,7 @@ namespace ShoeStore.Services
                 Tagline = dto.Tagline,
                 LogoBase64 = dto.LogoBase64,
                 FaviconBase64 = dto.FaviconBase64,
+                ShowLogoInHeader = dto.ShowLogoInHeader,
                 NavbarBg = dto.NavbarBgColor,
                 NavbarText = dto.NavbarTextColor,
                 NavbarLink = dto.NavbarLinkColor,
@@ -382,6 +388,7 @@ namespace ShoeStore.Services
             profile.Tagline = dto.Tagline;
             profile.LogoBase64 = dto.LogoBase64;
             profile.FaviconBase64 = dto.FaviconBase64;
+            profile.ShowLogoInHeader = dto.ShowLogoInHeader;
             profile.NavbarBg = dto.NavbarBgColor;
             profile.NavbarText = dto.NavbarTextColor;
             profile.NavbarLink = dto.NavbarLinkColor;
