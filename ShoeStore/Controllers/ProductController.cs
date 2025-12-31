@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Product;
 using ShoeStore.Services;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ShoeStore.Controllers
 {
@@ -13,7 +10,6 @@ namespace ShoeStore.Controllers
     {
         private readonly ProductService _service;
 
-
         public ProductController(ProductService injectedService)
         {
             _service = injectedService;
@@ -21,7 +17,7 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(GetProductsResposeDto))]
+        [ProducesResponseType(200, Type = typeof(GetProductsResponseDto))]
         [ProducesResponseType(500)]
         public async Task<IActionResult> GetProductsAsync([FromQuery] GetProductsRequest request)
         {
@@ -36,14 +32,16 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
+
         [HttpGet("featured")]
-        [ProducesResponseType(200, Type = typeof(GetProductsResposeDto))]
+        [ProducesResponseType(200, Type = typeof(GetProductsResponseDto))]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> GetfeaturedProductsAsync()
+        public async Task<IActionResult> GetFeaturedProductsAsync()
         {
             try
             {
-                var products = await _service.GetfeaturedProductsAsync();
+                var products = await _service.GetFeaturedProductsAsync();
 
                 return Ok(products);
             }
@@ -52,6 +50,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpGet("{productId}")]
         [ProducesResponseType(200, Type = typeof(ProductDto))]
@@ -73,6 +72,5 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-
     }
 }

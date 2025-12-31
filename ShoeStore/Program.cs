@@ -32,27 +32,9 @@ namespace ShoeStore
             {
                 builder.Services.AddDbContext<ShoeStoreContext>(options =>
                 {
-                    //Localhost
                     options.UseNpgsql(builder.Configuration.GetConnectionString("ShoeStoreConnection"));
                 });
             }
-            //else
-            //{
-            //builder.Services.AddDbContext<ShoeStoreContext>(options =>
-            //{
-            //    //Neon PostgreSQL
-            //    //options.UseNpgsql(builder.Configuration.GetConnectionString("ConnectionStrings__DefaultConnection"));
-            //    options.UseNpgsql(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection"));
-            //});
-            //}
-
-            //var testConnString = "Host=localhost;Port=5432;Database=shoe_store;Username=postgres;Password=123456789;SslMode=Disable";
-
-            //builder.Services.AddDbContext<ShoeStoreContext>(options =>
-            //{
-            //    //Local PostgreSQL
-            //    options.UseNpgsql(testConnString);
-            //});
 
             var connStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
             builder.Services.AddHealthChecks().AddNpgSql(connStr, name: "postgres");
@@ -72,8 +54,6 @@ namespace ShoeStore
             builder.Services.AddScoped<UserService, UserService>();
             builder.Services.AddScoped<AdminService, AdminService>();
             builder.Services.AddScoped<CmsService, CmsService>();
-            //builder.Services.AddScoped<PaymentIntentService, PaymentIntentService>();
-            //builder.Services.AddScoped<PaymentIntentCreateOptions, PaymentIntentCreateOptions>();
 
             builder.Services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<ShoeStoreContext>()

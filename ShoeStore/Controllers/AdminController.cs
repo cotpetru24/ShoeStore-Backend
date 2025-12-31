@@ -17,6 +17,7 @@ namespace ShoeStore.Controllers
             _adminService = adminService;
         }
 
+
         #region Dashboard
 
         [HttpGet("dashboard")]
@@ -35,6 +36,7 @@ namespace ShoeStore.Controllers
 
         #endregion
 
+
         #region Users
 
         [HttpGet("users")]
@@ -45,7 +47,6 @@ namespace ShoeStore.Controllers
                 if (request.PageNumber < 1) request.PageNumber = 1;
                 if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
 
-                //var users = await _adminService.GetUsersAsync(pageNumber, pageSize, searchTerm);
                 var users = await _adminService.GetUsersAsync(request);
                 return Ok(users);
             }
@@ -55,6 +56,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("users/{userId}")]
         public async Task<IActionResult> GetUserByIdAsync(string userId)
         {
@@ -62,9 +64,8 @@ namespace ShoeStore.Controllers
             {
                 var user = await _adminService.GetUserByIdAsync(userId);
                 if (user == null)
-                {
                     return NotFound(new { message = "User not found" });
-                }
+
                 return Ok(user);
             }
             catch (Exception ex)
@@ -72,6 +73,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching user", error = ex.Message });
             }
         }
+
 
         [HttpPut("users/{userId}")]
         public async Task<IActionResult> UpdateUserAsync(string userId, [FromBody] UpdateUserRequestDto request)
@@ -97,6 +99,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpPost("users")]
         public async Task<IActionResult> CreateUserAsync([FromBody] CreateUserRequestDto request)
         {
@@ -121,6 +124,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpDelete("users/{userId}")]
         public async Task<IActionResult> DeleteUserAsync(string userId)
         {
@@ -139,6 +143,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while deleting user", error = ex.Message });
             }
         }
+
 
         [HttpPut("users/{userId}/password")]
         public async Task<IActionResult> UpdateUserPasswordAsync(string userId, [FromBody] UpdateUserPasswordRequestDto request)
@@ -164,6 +169,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("users/{userId}/orders")]
         public async Task<IActionResult> GetUserOrdersAsync(string userId, [FromQuery] GetUserOrdersRequestDto request)
         {
@@ -184,7 +190,9 @@ namespace ShoeStore.Controllers
 
         #endregion
 
+
         #region Orders
+
 
         [HttpGet("orders")]
         public async Task<IActionResult> GetOrdersAsync([FromQuery] GetAdminOrdersRequestDto request)
@@ -203,6 +211,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("orders/{orderId}")]
         public async Task<IActionResult> GetOrderByIdAsync(int orderId)
         {
@@ -210,9 +219,7 @@ namespace ShoeStore.Controllers
             {
                 var order = await _adminService.GetOrderByIdAsync(orderId);
                 if (order == null)
-                {
                     return NotFound(new { message = "Order not found" });
-                }
                 return Ok(order);
             }
             catch (Exception ex)
@@ -220,6 +227,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching order", error = ex.Message });
             }
         }
+
 
         [HttpPut("orders/{orderId}/status")]
         public async Task<IActionResult> UpdateOrderStatusAsync(int orderId, [FromBody] UpdateOrderStatusRequestDto request)
@@ -245,9 +253,12 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         #endregion
 
+
         #region Products
+
 
         [HttpGet("products")]
         public async Task<IActionResult> GetProductsAsync([FromQuery] GetProductsRequestDto request)
@@ -266,6 +277,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("products/brands")]
         public async Task<IActionResult> GetProductBrandsAsync()
         {
@@ -279,6 +291,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching brands", error = ex.Message });
             }
         }
+
 
         [HttpGet("products/audience")]
         public async Task<IActionResult> GetProductAudienceAsync()
@@ -294,6 +307,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("products/{productId}")]
         public async Task<IActionResult> GetProductByIdAsync(int productId)
         {
@@ -301,9 +315,7 @@ namespace ShoeStore.Controllers
             {
                 var product = await _adminService.GetProductByIdAsync(productId);
                 if (product == null)
-                {
                     return NotFound(new { message = "Product not found" });
-                }
                 return Ok(product);
             }
             catch (Exception ex)
@@ -311,6 +323,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching product", error = ex.Message });
             }
         }
+
 
         [HttpPost("products")]
         public async Task<IActionResult> CreateProductAsync([FromBody] AdminProductDto productToAdd)
@@ -324,9 +337,7 @@ namespace ShoeStore.Controllers
 
                 var response = await _adminService.CreateProductAsync(productToAdd);
                 if (response == null)
-                {
                     return BadRequest(new { message = "Failed to create product" });
-                }
 
                 return Ok(response);
             }
@@ -335,6 +346,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while creating product", error = ex.Message });
             }
         }
+
 
         [HttpPut("products/{productId}")]
         public async Task<IActionResult> UpdateProductAsync(int productId, [FromBody] AdminProductDto productToUpdate)
@@ -360,6 +372,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpDelete("products/{productId}")]
         public async Task<IActionResult> DeleteProductAsync(int productId)
         {
@@ -378,6 +391,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, new { message = "An error occurred while deleting product", error = ex.Message });
             }
         }
+
 
         #endregion
     }

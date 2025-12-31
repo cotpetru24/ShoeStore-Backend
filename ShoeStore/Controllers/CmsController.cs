@@ -17,20 +17,14 @@ namespace ShoeStore.Controllers
         }
 
 
-
-
         [HttpGet("navAndFooter")]
         public async Task<IActionResult> GetCmsNavAndFooterAsync()
         {
-
             try
             {
                 var response = await _cmsService.GetCmsNavAndFooterAsync();
-
                 if (response == null)
-                {
                     return StatusCode(500, "Failed to get nav and footer.");
-                }
 
                 return Ok(response);
             }
@@ -44,15 +38,11 @@ namespace ShoeStore.Controllers
         [HttpGet("landing")]
         public async Task<IActionResult> GetCmsLandingPageAsync()
         {
-
             try
             {
                 var response = await _cmsService.GetCmsLandingPageAsync();
-
                 if (response == null)
-                {
                     return StatusCode(500, "Failed to get landing.");
-                }
 
                 return Ok(response);
             }
@@ -62,45 +52,13 @@ namespace ShoeStore.Controllers
             }
         }
 
-
-        //[HttpGet("active")]
-        //public async Task<IActionResult> GetCmsActiveProfileAsync()
-        //{
-
-        //    try
-        //    {
-        //        var response = await _cmsService.GetCmsActiveProfileAsync();
-
-        //        if (response == null)
-        //        {
-        //            return StatusCode(500, "Failed to get active CMS profile.");
-        //        }
-
-        //        return Ok(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new { message = "An error occurred while getting the active profile", error = ex.Message });
-        //    }
-        //}
-
-
-
-
         [HttpGet("profiles")]
         [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> GetCmsProfilesAsync()
         {
-
             try
             {
                 var response = await _cmsService.GetCmsProfilesAsync();
-
-                if (response == null)
-                {
-                    return StatusCode(500, "Failed to get CMS profiles.");
-                }
-
                 return Ok(response);
             }
             catch (Exception ex)
@@ -109,135 +67,97 @@ namespace ShoeStore.Controllers
             }
         }
 
-
-
-        [HttpGet("{profileId}")]
+        [HttpGet("{id}")]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> GetCmsProfileByIdAsync(int profileId)
+        public async Task<IActionResult> GetCmsProfileByIdAsync(int id)
         {
             try
             {
-                if (profileId <=0)
-                {
-                    return BadRequest(profileId);
-                }
-
-                var response = await _cmsService.GetCmsProfileByIdAsync(profileId);
-
-                if (response == null)
-                {
-                    return StatusCode(500, "Failed to get CMS profile.");
-                }
-
+                var response = await _cmsService.GetCmsProfileByIdAsync(id);
                 return Ok(response);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while getting profile", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while getting CMS profile", error = ex.Message });
             }
         }
-
-
 
         [HttpPost]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> CreateCmsProfileAsync(CmsProfileDto profileToCreate)
+        public async Task<IActionResult> CreateCmsProfileAsync([FromBody] CmsProfileDto dto)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var response = await _cmsService.CreateCmsProfileAsync(profileToCreate);
-
-                if (response == null)
-                {
-                    return StatusCode(500, "Failed to create CMS profile.");
-                }
-
+                var response = await _cmsService.CreateCmsProfileAsync(dto);
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating profile", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while creating CMS profile", error = ex.Message });
             }
-
         }
-
-        [HttpPost("activate/{profileId}")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> ActivateCmsProfileAsync(int profileId)
-        {
-            try
-            {
-                if (profileId <= 0)
-                {
-                    return BadRequest(profileId);
-                }
-
-                var response = await _cmsService.ActivateCmsProfileAsync(profileId);
-
-                if (response == null)
-                {
-                    return StatusCode(500, "Failed to activate CMS profile.");
-                }
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while activating profile", error = ex.Message });
-            }
-
-        }
-
 
         [HttpPut]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> UpdateCmsProfileAsync(CmsProfileDto profileToUpdate)
+        public async Task<IActionResult> UpdateCmsProfileAsync([FromBody] CmsProfileDto dto)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-                var response = await _cmsService.UpdateCmsProfileAsync(profileToUpdate);
-                if (response == null)
-                {
-                    return StatusCode(500, "Failed to update CMS profile.");
-                }
+                var response = await _cmsService.UpdateCmsProfileAsync(dto);
                 return Ok(response);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while updating profile", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while updating CMS profile", error = ex.Message });
             }
         }
 
-        [HttpDelete("{profileId}")]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> DeleteCmsProfileAsync(int profileId)
+        public async Task<IActionResult> DeleteCmsProfileAsync(int id)
         {
             try
             {
-                if (profileId <= 0)
-                {
-                    return BadRequest(profileId);
-                }
+                var result = await _cmsService.DeleteCmsProfileAsync(id);
+                if (!result)
+                    return NotFound(new { message = "CMS profile not found" });
 
-                var success = await _cmsService.DeleteCmsProfileAsync(profileId);
-                if (!success)
-                {
-                    return StatusCode(500, "Failed to delete CMS profile.");
-                }
-                return Ok(new { message = "CMS profile deleted successfully." });
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while deleting profile", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while deleting CMS profile", error = ex.Message });
+            }
+        }
+
+        [HttpPost("activate/{id}")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> ActivateCmsProfileAsync(int id)
+        {
+            try
+            {
+                var response = await _cmsService.ActivateCmsProfileAsync(id);
+                return Ok(response);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while activating CMS profile", error = ex.Message });
             }
         }
     }

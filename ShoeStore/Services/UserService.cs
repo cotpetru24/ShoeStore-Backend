@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.User;
-using System.Security.Claims;
 
 namespace ShoeStore.Services
 {
@@ -112,6 +111,24 @@ namespace ShoeStore.Services
                 PendingOrders = pendingOrders,
                 TotalSpent = totalSpent
             };
+        }
+
+        public async Task<List<GetAllUsersResponseDto>> GetAllUsersAsync()
+        {
+            var users = await _context.UserDetails
+                .Include(u => u.AspNetUser)
+                .Select(u => new GetAllUsersResponseDto
+                {
+                    Id = u.AspNetUser.Id,
+                    Email = u.AspNetUser.Email,
+                    EmailConfirmed = u.AspNetUser.EmailConfirmed,
+                    LockoutEnd = u.AspNetUser.LockoutEnd,
+                    LockoutEnabled = u.AspNetUser.LockoutEnabled,
+                    AccessFailedCount = u.AspNetUser.AccessFailedCount
+                })
+                .ToListAsync();
+
+            return users;
         }
     }
 }

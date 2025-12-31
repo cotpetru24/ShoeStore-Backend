@@ -17,147 +17,7 @@ namespace ShoeStore.Services
             _context = injectedContext;
             _mapper = injectedMapper;
             _paymentService = paymentService;
-
         }
-
-        //public async Task<PlaceOrderResponseDto> PlaceOrderAsync(PlaceOrderRequestDto request, string userId)
-        //{
-        //    using var transaction = await _context.Database.BeginTransactionAsync();
-        //    try
-        //    {
-        //        // Validate products and calculate totals
-        //        decimal subtotal = 0;
-        //        var orderItems = new List<OrderItem>();
-
-        //        foreach (var item in request.OrderItems)
-        //        {
-        //            var product = await _context.Products
-        //                .FirstOrDefaultAsync(p => p.Id == item.ProductId);
-
-        //            if (product == null)
-        //                throw new ArgumentException($"Product with ID {item.ProductId} not found");
-        //            if (product.Stock < item.Quantity)
-        //                throw new ArgumentException($"Insufficient stock for product {product.Name}. Available: {product.Stock}, Requested: {item.Quantity}");
-
-        //            var orderItem = new OrderItem
-        //            {
-        //                ProductId = item.ProductId,
-        //                ProductName = product.Name,
-        //                ProductPrice = product.Price,
-        //                Quantity = item.Quantity,
-        //                Size = item.Size,
-        //                CreatedAt = DateTime.Now
-        //            };
-
-        //            orderItems.Add(orderItem);
-        //            subtotal += product.Price * item.Quantity;
-
-        //            // Update product stock
-        //            product.Stock -= item.Quantity;
-        //        }
-
-        //        // Validate addresses
-        //        var shippingAddress = await _context.ShippingAddresses
-        //            .FirstOrDefaultAsync(a => a.Id == request.ShippingAddressId && a.UserId == userId);
-
-        //        if (shippingAddress == null)
-        //            throw new ArgumentException("Invalid shipping address");
-
-        //        #region Billing Address
-
-        //        BillingAddress billingAddressToStore = new BillingAddress();
-
-        //        if (request.BillingAddressSameAsShipping)
-        //        {
-        //            billingAddressToStore = new BillingAddress
-        //            {
-        //                AddressLine1 = shippingAddress.AddressLine1,
-        //                City = shippingAddress.City,
-        //                County = shippingAddress.County,
-        //                Country = shippingAddress.Country,
-        //                Postcode = shippingAddress.Postcode,
-        //                UserId = userId
-        //            };
-        //        }
-        //        else
-        //        {
-        //            billingAddressToStore = new BillingAddress
-        //            {
-        //                AddressLine1 = request.BillingAddressRequest.AddressLine1,
-        //                City = request.BillingAddressRequest.City,
-        //                County = request.BillingAddressRequest.County,
-        //                Country = request.BillingAddressRequest.Country,
-        //                Postcode = request.BillingAddressRequest.Postcode,
-        //                UserId = userId
-        //            };
-
-        //        }
-
-        //        _context.BillingAddresses.Add(billingAddressToStore);
-        //        await _context.SaveChangesAsync();
-
-        //        var billingAddressId = billingAddressToStore.Id;
-
-        //        if (billingAddressId <= 0)
-        //            throw new ArgumentException("Invalid billing address");
-
-        //        #endregion
-
-        //        // Get default order status (assuming "pending" is the default)
-        //        var defaultOrderStatus = await _context.OrderStatuses
-        //            .FirstOrDefaultAsync(s => s.Code == "processing");
-
-        //        if (defaultOrderStatus == null)
-        //            throw new InvalidOperationException("Default order status not found");
-
-        //        // Calculate total
-        //        var total = subtotal + request.ShippingCost - request.Discount;
-
-        //        // Create order
-        //        var order = new Order
-        //        {
-        //            UserId = userId,
-        //            OrderStatusId = defaultOrderStatus.Id,
-        //            Subtotal = subtotal,
-        //            ShippingCost = request.ShippingCost,
-        //            Discount = request.Discount,
-        //            Total = total,
-        //            ShippingAddressId = request.ShippingAddressId,
-        //            BillingAddressId = billingAddressId,
-        //            Notes = request.Notes,
-        //            CreatedAt = DateTime.UtcNow,
-        //            UpdatedAt = DateTime.UtcNow
-        //        };
-
-        //        _context.Orders.Add(order);
-        //        await _context.SaveChangesAsync();
-
-        //        // Add order items with order ID
-        //        foreach (var item in orderItems)
-        //        {
-        //            item.OrderId = order.Id;
-        //        }
-
-        //        _context.OrderItems.AddRange(orderItems);
-        //        await _context.SaveChangesAsync();
-
-        //        await transaction.CommitAsync();
-
-        //        return new PlaceOrderResponseDto
-        //        {
-        //            OrderId = order.Id,
-        //            Message = "Order placed successfully",
-        //            Total = order.Total,
-        //            CreatedAt = order.CreatedAt
-        //        };
-        //    }
-        //    catch
-        //    {
-        //        await transaction.RollbackAsync();
-        //        throw;
-        //    }
-        //}
-
 
         public async Task<PlaceOrderResponseDto> PlaceOrderAsync(
     PlaceOrderRequestDto request,
@@ -509,7 +369,6 @@ namespace ShoeStore.Services
         {
             var address = await _context.BillingAddresses
                 .Where(a => a.Id == addressId)
-                //.Where(a => a.Id == addressId && a.UserId == userId)
                 .FirstOrDefaultAsync();
 
             if (address == null)
@@ -550,9 +409,8 @@ namespace ShoeStore.Services
 
                 return await GetOrderByIdAsync(orderId, userId);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
                 return null;
             }
         }

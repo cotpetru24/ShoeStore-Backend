@@ -18,6 +18,7 @@ namespace ShoeStore.Controllers
             _orderService = orderService;
         }
 
+
         [HttpPost]
         [ProducesResponseType(200, Type = typeof(PlaceOrderResponseDto))]
         [ProducesResponseType(400)]
@@ -51,6 +52,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("{orderId}")]
         [ProducesResponseType(200, Type = typeof(OrderDto))]
         [ProducesResponseType(401)]
@@ -76,6 +78,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(GetOrdersResponseDto))]
         [ProducesResponseType(401)]
@@ -97,7 +100,7 @@ namespace ShoeStore.Controllers
             }
         }
 
-        // Shipping Address Endpoints
+
         [HttpPost("shipping-addresses")]
         [ProducesResponseType(200, Type = typeof(ShippingAddressResponseDto))]
         [ProducesResponseType(400)]
@@ -128,6 +131,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpGet("shipping-addresses")]
         [ProducesResponseType(200, Type = typeof(List<ShippingAddressDto>))]
         [ProducesResponseType(401)]
@@ -148,6 +152,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpGet("shipping-addresses/{addressId}")]
         [ProducesResponseType(200, Type = typeof(ShippingAddressDto))]
@@ -204,6 +209,7 @@ namespace ShoeStore.Controllers
             }
         }
 
+
         [HttpDelete("shipping-addresses/{addressId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -234,7 +240,7 @@ namespace ShoeStore.Controllers
             }
         }
 
-        // Billing Address Endpoints
+
         [HttpPost("billing-addresses")]
         [Authorize]
         [ProducesResponseType(200, Type = typeof(BillingAddressResponseDto))]
@@ -252,9 +258,7 @@ namespace ShoeStore.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized("User not authenticated");
 
-                //var result = await _orderService.CreateBillingAddressAsync(request, userId);
                 return Ok();
-                //return Ok(result);
             }
             catch (ArgumentException ex)
             {
@@ -265,6 +269,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpGet("billing-addresses")]
         [Authorize]
@@ -278,7 +283,7 @@ namespace ShoeStore.Controllers
                 var userId = User.FindFirst("Id")?.Value;
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized("User not authenticated");
-                var id = 123; // Test 
+                var id = 123;
                 var addresses = await _orderService.GetBillingAddressesAsync(id);
                 return Ok(addresses);
             }
@@ -287,6 +292,7 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpGet("billing-addresses/{addressId}")]
         [Authorize]
@@ -347,8 +353,5 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-
-
-
     }
 }

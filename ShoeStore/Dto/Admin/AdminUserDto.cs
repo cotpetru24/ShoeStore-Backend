@@ -21,6 +21,7 @@ namespace ShoeStore.Dto.Admin
         public List<string> Roles { get; set; } = new List<string>();
     }
 
+
     public class AdminUsersListDto
     {
         public List<AdminUserDto> Users { get; set; } = new List<AdminUserDto>();
@@ -30,6 +31,7 @@ namespace ShoeStore.Dto.Admin
         public int TotalPages { get; set; }
         public AdminUsersStatsDto AdminUsersStats { get; set; }
     }
+
 
     public class UpdateUserRequestDto
     {
@@ -42,6 +44,7 @@ namespace ShoeStore.Dto.Admin
         public List<string> Roles { get; set; } = new List<string>();
     }
 
+
     public class CreateUserRequestDto
     {
         public string Email { get; set; } = null!;
@@ -51,10 +54,12 @@ namespace ShoeStore.Dto.Admin
         public List<string> Roles { get; set; } = new List<string>();
     }
 
+
     public class UpdateUserPasswordRequestDto
     {
         public string NewPassword { get; set; } = null!;
     }
+
 
     public class GetUserOrdersRequestDto
     {
@@ -85,9 +90,8 @@ namespace ShoeStore.Dto.Admin
         public int TotalActiveUsersCount { get; set; }
         public int TotalBlockedUsersCount { get; set; }
         public int TotalNewUsersCountThisMonth { get; set; }
-
-
     }
+
 
     public enum AdminUserSortBy
     {
@@ -95,17 +99,20 @@ namespace ShoeStore.Dto.Admin
         Name = 2,
     }
 
+
     public enum AdminUserSortDirection
     {
         Ascending = 1,
         Descending = 2,
     }
 
+
     public enum UserStatus
     {
         Active = 1,
         Blocked = 2,
     }
+
 
     public enum UserRole
     {

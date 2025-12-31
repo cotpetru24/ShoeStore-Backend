@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Cms;
+using System.Linq;
 
 namespace ShoeStore.Services
 {
@@ -147,7 +148,7 @@ namespace ShoeStore.Services
 
 
 
-        internal async Task<CmsNavAndFooterDto> GetCmsNavAndFooterAsync()
+        public async Task<CmsNavAndFooterDto> GetCmsNavAndFooterAsync()
         {
             var activeProfile = await _context.CmsProfiles.FirstOrDefaultAsync(p => p.IsActive);
 
@@ -222,47 +223,30 @@ namespace ShoeStore.Services
             };
         }
 
-
-        //internal async Task<CmsProfileDto> GetCmsActiveProfileAsync()
-        //{
-
-        //    //return the active cms profile from the database
-        //    var testProfile = new CmsProfileDto();
-
-
-        //    return testProfile;
-        //}
-
-
-        internal async Task<List<CmsStoredProfileDto>> GetCmsProfilesAsync()
+        public async Task<List<CmsStoredProfileDto>> GetCmsProfilesAsync()
         {
-            var storedProfiles = await _context.CmsProfiles
-                .OrderBy(p => p.UpdatedAt)
+            return await _context.CmsProfiles
                 .Select(p => new CmsStoredProfileDto()
                 {
-                    CreatedAt = p.CreatedAt,
                     Id = p.Id,
-                    IsActive = p.IsActive,
-                    LastModified = p.UpdatedAt,
                     ProfileName = p.Name,
+                    IsActive = p.IsActive,
                     IsDefault = p.IsDefault,
+                    LastModified = p.UpdatedAt,
+                    CreatedAt = p.CreatedAt
                 })
                 .ToListAsync();
-
-            return storedProfiles;
         }
 
-        internal async Task<CmsProfileDto> GetCmsProfileByIdAsync(int profileId)
+        public async Task<CmsProfileDto> GetCmsProfileByIdAsync(int id)
         {
             var profile = await _context.CmsProfiles
                 .Include(p => p.CmsFeatures)
                 .Include(p => p.CmsCategories)
-                .FirstOrDefaultAsync(p => p.Id == profileId);
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (profile == null)
-            {
-                throw new KeyNotFoundException($"Profile with ID {profileId} not found.");
-            }
+                throw new KeyNotFoundException($"CMS profile with ID {id} not found.");
 
             var features = profile.CmsFeatures
                 .OrderBy(f => f.SortOrder)
@@ -315,47 +299,41 @@ namespace ShoeStore.Services
             };
         }
 
-        internal async Task<CmsProfileDto> CreateCmsProfileAsync(CmsProfileDto profileToCreate)
+        public async Task<CmsProfileDto> CreateCmsProfileAsync(CmsProfileDto dto)
         {
-            // Create the profile entity
-            var newProfile = new CmsProfile()
+            var profile = new CmsProfile()
             {
-                Name = profileToCreate.ProfileName,
-                SiteName = profileToCreate.WebsiteName,
-                Tagline = profileToCreate.Tagline,
-                IsActive = false, // New profiles are inactive by default
+                Name = dto.ProfileName,
+                IsActive = false,
                 IsDefault = false,
-                LogoBase64 = profileToCreate.LogoBase64,
-                FaviconBase64 = profileToCreate.FaviconBase64,
-                NavbarBg = profileToCreate.NavbarBgColor,
-                NavbarText = profileToCreate.NavbarTextColor,
-                NavbarLink = profileToCreate.NavbarLinkColor,
-                FooterBg = profileToCreate.FooterBgColor,
-                FooterText = profileToCreate.FooterTextColor,
-                FooterLink = profileToCreate.FooterLinkColor,
-                HeroTitle = profileToCreate.HeroTitle,
-                HeroSubtitle = profileToCreate.HeroSubtitle,
-                HeroDescription = profileToCreate.HeroDescription,
-                HeroPrimaryBtn = profileToCreate.HeroPrimaryButtonText,
-                HeroSecondaryBtn = profileToCreate.HeroSecondaryButtonText,
-                HeroBgBase64 = profileToCreate.HeroBackgroundImageBase64,
-                NewsletterTitle = null,
-                NewsletterDescription = null,
-                NewsletterButtonText = null,
-                ShowLogoInHeader = false,
+                SiteName = dto.WebsiteName,
+                Tagline = dto.Tagline,
+                LogoBase64 = dto.LogoBase64,
+                FaviconBase64 = dto.FaviconBase64,
+                NavbarBg = dto.NavbarBgColor,
+                NavbarText = dto.NavbarTextColor,
+                NavbarLink = dto.NavbarLinkColor,
+                FooterBg = dto.FooterBgColor,
+                FooterText = dto.FooterTextColor,
+                FooterLink = dto.FooterLinkColor,
+                HeroTitle = dto.HeroTitle,
+                HeroSubtitle = dto.HeroSubtitle,
+                HeroDescription = dto.HeroDescription,
+                HeroPrimaryBtn = dto.HeroPrimaryButtonText,
+                HeroSecondaryBtn = dto.HeroSecondaryButtonText,
+                HeroBgBase64 = dto.HeroBackgroundImageBase64,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            await _context.CmsProfiles.AddAsync(newProfile);
+            await _context.CmsProfiles.AddAsync(profile);
             await _context.SaveChangesAsync();
 
-            var profileId = newProfile.Id;
+            var profileId = profile.Id;
 
-            // Add features
-            if (profileToCreate.Features != null && profileToCreate.Features.Any())
+            if (dto.Features != null && dto.Features.Any())
             {
-                var features = profileToCreate.Features.Select(f => new CmsFeature()
+                var features = dto.Features.Select(f => new CmsFeature()
                 {
                     ProfileId = profileId,
                     IconClass = f.IconClass,
@@ -368,10 +346,9 @@ namespace ShoeStore.Services
                 await _context.CmsFeatures.AddRangeAsync(features);
             }
 
-            // Add categories
-            if (profileToCreate.Categories != null && profileToCreate.Categories.Any())
+            if (dto.Categories != null && dto.Categories.Any())
             {
-                var categories = profileToCreate.Categories.Select(c => new CmsCategory()
+                var categories = dto.Categories.Select(c => new CmsCategory()
                 {
                     ProfileId = profileId,
                     Title = c.Title,
@@ -387,18 +364,109 @@ namespace ShoeStore.Services
 
             await _context.SaveChangesAsync();
 
-            // Return the created profile
             return await GetCmsProfileByIdAsync(profileId);
         }
 
-        internal async Task<CmsProfileDto> ActivateCmsProfileAsync(int profileId)
+        public async Task<CmsProfileDto> UpdateCmsProfileAsync(CmsProfileDto dto)
         {
-            var exists = await _context.CmsProfiles
-                .AnyAsync(p => p.Id == profileId);
+            var profile = await _context.CmsProfiles
+                .Include(p => p.CmsFeatures)
+                .Include(p => p.CmsCategories)
+                .FirstOrDefaultAsync(p => p.Id == dto.Id);
 
-            if (!exists)
+            if (profile == null)
+                throw new KeyNotFoundException($"CMS profile with ID {dto.Id} not found.");
+
+            profile.Name = dto.ProfileName;
+            profile.SiteName = dto.WebsiteName;
+            profile.Tagline = dto.Tagline;
+            profile.LogoBase64 = dto.LogoBase64;
+            profile.FaviconBase64 = dto.FaviconBase64;
+            profile.NavbarBg = dto.NavbarBgColor;
+            profile.NavbarText = dto.NavbarTextColor;
+            profile.NavbarLink = dto.NavbarLinkColor;
+            profile.FooterBg = dto.FooterBgColor;
+            profile.FooterText = dto.FooterTextColor;
+            profile.FooterLink = dto.FooterLinkColor;
+            profile.HeroTitle = dto.HeroTitle;
+            profile.HeroSubtitle = dto.HeroSubtitle;
+            profile.HeroDescription = dto.HeroDescription;
+            profile.HeroPrimaryBtn = dto.HeroPrimaryButtonText;
+            profile.HeroSecondaryBtn = dto.HeroSecondaryButtonText;
+            profile.HeroBgBase64 = dto.HeroBackgroundImageBase64;
+            profile.UpdatedAt = DateTime.UtcNow;
+
+            _context.CmsFeatures.RemoveRange(profile.CmsFeatures);
+            _context.CmsCategories.RemoveRange(profile.CmsCategories);
+
+            if (dto.Features != null && dto.Features.Any())
             {
-                throw new KeyNotFoundException($"Profile with ID {profileId} not found.");
+                var features = dto.Features.Select(f => new CmsFeature()
+                {
+                    ProfileId = profile.Id,
+                    IconClass = f.IconClass,
+                    Title = f.Title,
+                    Description = f.Description,
+                    SortOrder = f.SortOrder,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                await _context.CmsFeatures.AddRangeAsync(features);
+            }
+
+            if (dto.Categories != null && dto.Categories.Any())
+            {
+                var categories = dto.Categories.Select(c => new CmsCategory()
+                {
+                    ProfileId = profile.Id,
+                    Title = c.Title,
+                    Description = c.Description,
+                    ImageBase64 = c.ImageBase64,
+                    ItemTagline = c.ItemTagline,
+                    SortOrder = c.SortOrder,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                await _context.CmsCategories.AddRangeAsync(categories);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return await GetCmsProfileByIdAsync(profile.Id);
+        }
+
+        public async Task<bool> DeleteCmsProfileAsync(int id)
+        {
+            var profile = await _context.CmsProfiles
+                .Include(p => p.CmsFeatures)
+                .Include(p => p.CmsCategories)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (profile == null)
+                return false;
+
+            if (profile.IsDefault)
+                throw new InvalidOperationException("Cannot delete the default profile.");
+
+            if (profile.IsActive)
+                throw new InvalidOperationException("Cannot delete the active profile. Please activate another profile first.");
+
+            _context.CmsFeatures.RemoveRange(profile.CmsFeatures);
+            _context.CmsCategories.RemoveRange(profile.CmsCategories);
+            _context.CmsProfiles.Remove(profile);
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<CmsProfileDto> ActivateCmsProfileAsync(int id)
+        {
+            var profile = await _context.CmsProfiles
+               .AnyAsync(p => p.Id == id);
+
+            if (!profile)
+            {
+                throw new KeyNotFoundException($"Profile with ID {id} not found.");
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -413,7 +481,7 @@ namespace ShoeStore.Services
                     );
 
                 await _context.CmsProfiles
-                    .Where(p => p.Id == profileId)
+                    .Where(p => p.Id == id)
                     .ExecuteUpdateAsync(setters =>
                         setters
                             .SetProperty(p => p.IsActive, true)
@@ -428,125 +496,7 @@ namespace ShoeStore.Services
                 throw;
             }
 
-            return await GetCmsProfileByIdAsync(profileId);
+            return await GetCmsProfileByIdAsync(id);
         }
-
-
-        internal async Task<CmsProfileDto> UpdateCmsProfileAsync(CmsProfileDto profileToUpdate)
-        {
-            var profile = await _context.CmsProfiles
-                .Include(p => p.CmsFeatures)
-                .Include(p => p.CmsCategories)
-                .FirstOrDefaultAsync(p => p.Id == profileToUpdate.Id);
-
-            if (profile == null)
-            {
-                throw new KeyNotFoundException($"Profile with ID {profileToUpdate.Id} not found.");
-            }
-
-            // Update profile properties
-            profile.Name = profileToUpdate.ProfileName;
-            profile.SiteName = profileToUpdate.WebsiteName;
-            profile.Tagline = profileToUpdate.Tagline;
-            profile.LogoBase64 = profileToUpdate.LogoBase64;
-            profile.FaviconBase64 = profileToUpdate.FaviconBase64;
-            profile.NavbarBg = profileToUpdate.NavbarBgColor;
-            profile.NavbarText = profileToUpdate.NavbarTextColor;
-            profile.NavbarLink = profileToUpdate.NavbarLinkColor;
-            profile.FooterBg = profileToUpdate.FooterBgColor;
-            profile.FooterText = profileToUpdate.FooterTextColor;
-            profile.FooterLink = profileToUpdate.FooterLinkColor;
-            profile.HeroTitle = profileToUpdate.HeroTitle;
-            profile.HeroSubtitle = profileToUpdate.HeroSubtitle;
-            profile.HeroDescription = profileToUpdate.HeroDescription;
-            profile.HeroPrimaryBtn = profileToUpdate.HeroPrimaryButtonText;
-            profile.HeroSecondaryBtn = profileToUpdate.HeroSecondaryButtonText;
-            profile.HeroBgBase64 = profileToUpdate.HeroBackgroundImageBase64;
-            profile.UpdatedAt = DateTime.UtcNow;
-
-            // Update features - remove existing and add new ones
-            _context.CmsFeatures.RemoveRange(profile.CmsFeatures);
-            if (profileToUpdate.Features != null && profileToUpdate.Features.Any())
-            {
-                var features = profileToUpdate.Features.Select(f => new CmsFeature()
-                {
-                    ProfileId = profile.Id,
-                    IconClass = f.IconClass,
-                    Title = f.Title,
-                    Description = f.Description,
-                    SortOrder = f.SortOrder,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList();
-
-                await _context.CmsFeatures.AddRangeAsync(features);
-            }
-
-            // Update categories - remove existing and add new ones
-            _context.CmsCategories.RemoveRange(profile.CmsCategories);
-            if (profileToUpdate.Categories != null && profileToUpdate.Categories.Any())
-            {
-                var categories = profileToUpdate.Categories.Select(c => new CmsCategory()
-                {
-                    ProfileId = profile.Id,
-                    Title = c.Title,
-                    Description = c.Description,
-                    ImageBase64 = c.ImageBase64,
-                    ItemTagline = c.ItemTagline,
-                    SortOrder = c.SortOrder,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList();
-
-                await _context.CmsCategories.AddRangeAsync(categories);
-            }
-
-            await _context.SaveChangesAsync();
-
-            // Return the updated profile
-            return await GetCmsProfileByIdAsync(profile.Id);
-        }
-
-        internal async Task<bool> DeleteCmsProfileAsync(int profileId)
-        {
-            var profile = await _context.CmsProfiles
-                .Include(p => p.CmsFeatures)
-                .Include(p => p.CmsCategories)
-                .FirstOrDefaultAsync(p => p.Id == profileId);
-
-            if (profile == null)
-            {
-                throw new KeyNotFoundException($"Profile with ID {profileId} not found.");
-            }
-
-            // Check if it's the last profile
-            var totalProfiles = await _context.CmsProfiles.CountAsync();
-            if (totalProfiles <= 1)
-            {
-                throw new InvalidOperationException("Cannot delete the last profile. At least one profile must exist.");
-            }
-
-            // Check if it's the active profile
-            if (profile.IsActive)
-            {
-                throw new InvalidOperationException("Cannot delete the active profile. Please set another profile as active first.");
-            }
-
-            // Check if it's the default profile
-            if (profile.IsDefault)
-            {
-                throw new InvalidOperationException("Cannot delete the default profile.");
-            }
-
-            // Delete associated features and categories (cascade delete should handle this, but being explicit)
-            _context.CmsFeatures.RemoveRange(profile.CmsFeatures);
-            _context.CmsCategories.RemoveRange(profile.CmsCategories);
-
-            // Delete the profile
-            _context.CmsProfiles.Remove(profile);
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
-
-
     }
 }

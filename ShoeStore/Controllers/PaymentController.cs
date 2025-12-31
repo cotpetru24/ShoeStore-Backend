@@ -25,8 +25,6 @@ namespace ShoeStore.Controllers
         {
             try
             {
-
-
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
@@ -34,17 +32,15 @@ namespace ShoeStore.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized("User not authenticated");
 
-
-
                 var paymentIntent = await _paymentService.CreatePaymentIntent(amount);
                 return Ok(new { clientSecret = paymentIntent.ClientSecret });
             }
             catch (Exception ex)
             {
-                // Log the exception (ex) as needed
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpPost("storePaymentDetails")]
         [ProducesResponseType(200)]
@@ -53,7 +49,6 @@ namespace ShoeStore.Controllers
         {
             try
             {
-
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
@@ -65,16 +60,14 @@ namespace ShoeStore.Controllers
 
                 var paymentIntent = await _paymentService.StorePaymentDetails(storePaymentDto, userId, userEmail);
 
-                //here return the paymentobjuct or just the paymnet id
                 return Ok();
-                //return Ok(new { clientSecret = paymentIntent.ClientSecret });
             }
             catch (Exception ex)
             {
-                // Log the exception (ex) as needed
                 return StatusCode(500, "Internal server error");
             }
         }
+
 
         [HttpPut("RefundPayment")]
         [ProducesResponseType(200)]
@@ -93,9 +86,7 @@ namespace ShoeStore.Controllers
 
                 var refundResult = await _paymentService.RefundPayment(orderId);
                 if (refundResult == null)
-                {
                     return NotFound("Payment intent not found or could not be refunded.");
-                }
                 if (refundResult == false)
                 {
                     return StatusCode(500, "Failed to refund.");
@@ -107,7 +98,5 @@ namespace ShoeStore.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-
-
     }
 }

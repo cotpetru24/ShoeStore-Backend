@@ -15,8 +15,6 @@ namespace ShoeStore.Dto.Product
 
         public decimal? OriginalPrice { get; set; } = null;
 
-        //public string? ImagePath { get; set; } = null;
-
         public int TotalStock { get; set; }
 
         public string BrandName { get; set; } = string.Empty;

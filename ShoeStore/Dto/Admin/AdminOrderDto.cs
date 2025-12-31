@@ -26,6 +26,7 @@ namespace ShoeStore.Dto.Admin
         public AdminPaymentDto Payment { get; set; } = new AdminPaymentDto();
     }
 
+
     public class AdminOrderListDto
     {
         public List<AdminOrderDto> Orders { get; set; } = new List<AdminOrderDto>();
@@ -37,6 +38,7 @@ namespace ShoeStore.Dto.Admin
 
     }
 
+
     public class AdminOrdersStatsDto
     {
         public int TotalOrdersCount { get; set; }
@@ -46,7 +48,6 @@ namespace ShoeStore.Dto.Admin
 
 
     }
-
 
 
     public class AdminShippingAddressDto
@@ -63,6 +64,7 @@ namespace ShoeStore.Dto.Admin
         public string? PhoneNumber { get; set; }
     }
 
+
     public class AdminBillingAddressDto
     {
         public int Id { get; set; }
@@ -77,6 +79,7 @@ namespace ShoeStore.Dto.Admin
         public string? PhoneNumber { get; set; }
     }
 
+
     public class AdminPaymentBriefDto
     {
         public int Id { get; set; }
@@ -87,38 +90,30 @@ namespace ShoeStore.Dto.Admin
         public DateTime? CreatedAt { get; set; }
     }
 
+
     public class AdminPaymentDto
     {
         public int Id { get; set; }
-
         public string? PaymentStatusName { get; set; }
-
         public string? TransactionId { get; set; }
-
         public DateTime? CreatedAt { get; set; }
-
         public decimal Amount { get; set; }
-
         public string? Currency { get; set; }
-
         public string? CardBrand { get; set; }
-
         public string? CardLast4 { get; set; }
-
         public string? BillingName { get; set; }
-
         public string? BillingEmail { get; set; }
-
         public string? PaymentMethod { get; set; }
-
         public string? ReceiptUrl { get; set; }
     }
+
 
     public class UpdateOrderStatusRequestDto
     {
         public int OrderStatusId { get; set; }
         public string? Notes { get; set; }
     }
+
 
     public class GetAdminOrdersRequestDto
     {
@@ -132,11 +127,13 @@ namespace ShoeStore.Dto.Admin
         public AdminOrderSortDirection SortDirection { get; set; } = AdminOrderSortDirection.Descending;
     }
 
+
     public enum AdminOrderSortBy
     {
         DateCreated,
         Total,
     }
+
 
     public enum AdminOrderSortDirection
     {

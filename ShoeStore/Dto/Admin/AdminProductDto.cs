@@ -29,6 +29,7 @@ namespace ShoeStore.Dto.Admin
         public List<ProductImageDto> ProductImages { get; set; } = new List<ProductImageDto>();
     }
 
+
     public class AdminProductListDto
     {
         public List<AdminProductDto> Products { get; set; } = new List<AdminProductDto>();
@@ -41,24 +42,19 @@ namespace ShoeStore.Dto.Admin
     }
 
 
-
-
-
-
-
-
-
     public class AdminBrandDto
     {
         public int BrandId { get; set; }
         public string BrandName { get; set; }
     }
 
+
     public class AdminAudienceDto
     {
         public int AudienceId { get; set; }
         public string AudienceName { get; set; }
     }
+
 
     public class CreateProductRequestDto
     {
@@ -75,6 +71,7 @@ namespace ShoeStore.Dto.Admin
         public List<CreateProductSizeRequestDto> ProductSizes { get; set; } = new List<CreateProductSizeRequestDto>();
         public List<CreateProductImageRequestDto> ProductImages { get; set; } = new List<CreateProductImageRequestDto>();
     }
+
 
     public class UpdateProductRequestDto
     {
@@ -103,6 +100,7 @@ namespace ShoeStore.Dto.Admin
         public int SortOrder { get; set; }
     }
 
+
     public class GetProductsRequestDto
     {
         public int PageNumber { get; set; } = 1;
@@ -111,18 +109,10 @@ namespace ShoeStore.Dto.Admin
         public string? ProductBrand { get; set; }
         public string? ProductCategory { get; set; }
         public bool? IsActive { get; set; }
-        public string? ProductStockStatus {get; set;}
+        public string? ProductStockStatus { get; set; }
         public string? SortBy { get; set; }
         public string? SortDirection { get; set; }
-
-
-        //public decimal? MinPrice { get; set; }
-        //public decimal? MaxPrice { get; set; }
-        //public bool? IsNew { get; set; }
-        //public bool? LowStock { get; set; }
-
     }
-
 
 
     public class AdminProductsStatsDto
@@ -134,8 +124,6 @@ namespace ShoeStore.Dto.Admin
     }
 
 
-
-
     public enum AdminProductStockStatus
     {
         LowStock = 1,
@@ -144,11 +132,13 @@ namespace ShoeStore.Dto.Admin
         OutOfStock = 4
     }
 
+
     public enum AdminProductStatus
     {
         Active = 1,
         Inactive = 2,
     }
+
 
     public enum AdminProductsSortBy
     {
@@ -157,11 +147,13 @@ namespace ShoeStore.Dto.Admin
         Stock = 3
     }
 
+
     public enum AdminProductsSortDirection
     {
         Ascending = 1,
         Descending = 2,
     }
+
 
     public static class AdminProductEnumMappings
     {

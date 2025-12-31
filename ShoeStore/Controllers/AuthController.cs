@@ -19,7 +19,6 @@ namespace ShoeStore.Controllers
         }
 
 
-
         [HttpPost("login")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]

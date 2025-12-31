@@ -1,9 +1,8 @@
 ﻿namespace ShoeStore.Dto.Product
 {
-    public class GetProductsResposeDto
+    public class GetProductsResponseDto
     {
         public List<ProductDto> Products { get; set; }
-        public string [] Brands {get;set;}
-
+        public string[] Brands { get; set; }
     }
 }

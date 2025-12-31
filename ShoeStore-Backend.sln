@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShoeStore", "ShoeStore\Shoe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShoeStore.DataContext.PostgreSQL", "ShoeStore.DataContext.PostgreSQL\ShoeStore.DataContext.PostgreSQL.csproj", "{86360836-1C35-4251-BEDD-140D27B3151A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShoeStore.Tests", "Tests\ShoeStore.Tests.csproj", "{A9DBEF74-DDC5-94AE-A0FA-5BFAEA145EE9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{86360836-1C35-4251-BEDD-140D27B3151A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86360836-1C35-4251-BEDD-140D27B3151A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86360836-1C35-4251-BEDD-140D27B3151A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9DBEF74-DDC5-94AE-A0FA-5BFAEA145EE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9DBEF74-DDC5-94AE-A0FA-5BFAEA145EE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9DBEF74-DDC5-94AE-A0FA-5BFAEA145EE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9DBEF74-DDC5-94AE-A0FA-5BFAEA145EE9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

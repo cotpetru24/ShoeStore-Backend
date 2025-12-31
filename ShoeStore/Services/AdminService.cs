@@ -83,15 +83,6 @@ namespace ShoeStore.Services
                 .CountAsync();
 
 
-            //var lowStockProducts = await _context.Products
-            //    .Include(p => p.ProductSizes)
-            //    .CountAsync(p =>
-            //        p.ProductSizes.Sum(s => s.Stock) > 0 &&
-            //        p.ProductSizes.Sum(s => s.Stock) <= 10);
-
-            //var outOfStockProducts = await _context.Products
-            //    .CountAsync(p => p.ProductSizes.Sum(s => s.Stock) == 0);
-
             var lowStockProducts = await _context.Products
     .Select(p => new
     {
@@ -106,10 +97,6 @@ namespace ShoeStore.Services
                 })
                 .CountAsync(p => p.TotalStock == 0);
 
-
-
-            //Query to the latest 10 activities
-            //When audit entity is acreated and added, user the audit to cet the recent activity
             var userQuery = _context.UserDetails
                 .Select(u => new RecentActivityDto
                 {
@@ -798,11 +785,6 @@ namespace ShoeStore.Services
                 });
             }
 
-
-            //Add an enum for order status ids
-
-
-            //Admin orders stats 
             var totalOrdersCount = await _context.Orders.CountAsync();
             var totalPendingOrdersCount = await _context.Orders
                 .Where(o => o.OrderStatus!.Id == 1)
@@ -1069,75 +1051,8 @@ namespace ShoeStore.Services
 
             }
 
-            //if (request.MinPrice.HasValue)
-            //{
-            //    query = query.Where(p => p.Price >= request.MinPrice);
-            //}
-
-            //if (request.MaxPrice.HasValue)
-            //{
-            //    query = query.Where(p => p.Price <= request.MaxPrice);
-            //}
-
-            //if (request.IsNew.HasValue)
-            //{
-            //    query = query.Where(p => p.IsNew == request.IsNew);
-            //}
-
-            //if (request.LowStock == true)
-            //{
-            //    query = query.Where(p => p.Stock <= 10);
-            //}
-
-
-
-
-
-            //ProductStatus? status = request.Status?.ToLower() switch
-            //{
-            //    "active" => ProductStatus.Active,
-            //    "inactive" => ProductStatus.Inactive,
-            //    _ => null
-            //};
-
-            //ProductStockStatus? stockStatus = request.StockStatus?.ToLower() switch
-            //{
-            //    "low stock" => ProductStockStatus.LowStock,
-            //    "high stock" => ProductStockStatus.HighStock,
-            //    "in stock" => ProductStockStatus.InStock,
-            //    "out of stock" => ProductStockStatus.OutOfStock,
-            //    _ => null
-            //};
-
-            //if (status.HasValue)
-            //    query = query.Where(p => p.Status == status);
-
-            //if (stockStatus.HasValue)
-            //    query = query.Where(p => p.StockStatus == stockStatus);
-
-
-
-
-            //// Apply sorting
-            //query = request.SortBy?.ToLower() switch
-            //{
-            //    "createdat" => request.SortDirection == "asc"
-            //        ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
-            //        : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id),
-
-            //    "name" => request.SortDirection == "asc"
-            //        ? query.OrderBy(p => p.Name).ThenBy(p => p.Id)
-            //        : query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id),
-
-            //    _ => query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
-            //};
-
-
             var totalQueryCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalQueryCount / request.PageSize);
-
-
-
 
             var products = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
@@ -1159,7 +1074,7 @@ namespace ShoeStore.Services
                     Stock = ps.Stock
                 }).ToList();
 
-                var productImages = new List<ProductImageDto>(); // ProductImages not available in current model
+                var productImages = new List<ProductImageDto>();
 
                 adminProducts.Add(new AdminProductDto
                 {
@@ -1168,8 +1083,6 @@ namespace ShoeStore.Services
                     Description = product.Description,
                     Price = product.Price,
                     OriginalPrice = product.OriginalPrice,
-                    //ImagePath = product.ImagePath,
-                    //TotalStock = product.Stock,
                     BrandId = product.BrandId,
                     BrandName = product.Brand?.Name,
                     AudienceId = product.AudienceId,
@@ -1186,8 +1099,6 @@ namespace ShoeStore.Services
                 });
             }
 
-
-            //Admin products stats 
             var totalProductsCount = await _context.Products.CountAsync();
             var totalActiveProductsCount = await _context.Products
                 .Where(p => p.IsActive == true)
@@ -1293,7 +1204,7 @@ namespace ShoeStore.Services
                     Barcode = ps.Barcode,
                     Sku = ps.Sku
                 }).ToList(),
-                ProductImages = new List<ProductImageDto>(), // ProductImages not available in current model
+                ProductImages = new List<ProductImageDto>(),
                 ProductFeatures = product.ProductFeatures.Select(pf => new ProductFeatureDto()
                 {
                     FeatureText = pf.FeatureText,
@@ -1371,9 +1282,6 @@ namespace ShoeStore.Services
                 });
             }
 
-
-            // ProductImages not available in current model - skip image creation
-
             await _context.SaveChangesAsync();
 
 
@@ -1384,7 +1292,6 @@ namespace ShoeStore.Services
                 Description = product.Description,
                 Price = product.Price,
                 OriginalPrice = product.OriginalPrice,
-                //ImagePath = product.ImagePath,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
                 AudienceId = product.AudienceId,
@@ -1404,7 +1311,7 @@ namespace ShoeStore.Services
                     Barcode = ps.Barcode,
                     Sku = ps.Sku
                 }).ToList(),
-                ProductImages = new List<ProductImageDto>(), // ProductImages not available in current model
+                ProductImages = new List<ProductImageDto>(),
                 ProductFeatures = product.ProductFeatures.Select(pf => new ProductFeatureDto()
                 {
                     FeatureText = pf.FeatureText,

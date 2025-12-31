@@ -17,10 +17,6 @@ namespace ShoeStore.Mappings
 
             CreateMap<ProductImage, AdditionalProductImageDto>();
 
-            // Order mappings
-            //CreateMap<Order, OrderDto>()
-            //    .ForMember(dest => dest.OrderStatusName, opt => opt.MapFrom(src => src.OrderStatus != null ? src.OrderStatus.DisplayName : string.Empty));
-
             CreateMap<Order, OrderDto>()
                 .ForMember(dest => dest.OrderStatusName,
                     opt => opt.MapFrom(src => src.OrderStatus != null ? src.OrderStatus.DisplayName : string.Empty))
@@ -30,7 +26,6 @@ namespace ShoeStore.Mappings
 
 
             CreateMap<OrderItem, OrderItemDto>()
-                //.ForMember(dest => dest.ImagePath, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImagePath : string.Empty))
                 .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.ProductSize.Product != null && src.ProductSize.Product.Brand != null ? src.ProductSize.Product.Brand.Name : string.Empty));
 
             // Payments mapping

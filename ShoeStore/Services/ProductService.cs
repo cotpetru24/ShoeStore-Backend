@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Product;
@@ -9,20 +8,14 @@ namespace ShoeStore.Services
     public class ProductService
     {
         private readonly ShoeStoreContext _context;
-        private readonly IMapper _mapper;
 
-
-        public ProductService(ShoeStoreContext injectedContext, IMapper injectedMapper)
+        public ProductService(ShoeStoreContext injectedContext)
         {
             _context = injectedContext;
-            _mapper = injectedMapper;
         }
 
-
-
-        public async Task<GetProductsResposeDto> GetProductsAsync(GetProductsRequest request)
+        public async Task<GetProductsResponseDto> GetProductsAsync(GetProductsRequest request)
         {
-
             IQueryable<Product> products = _context.Products
                 .Include(p => p.Brand)
                 .Include(p => p.Audience)
@@ -52,7 +45,6 @@ namespace ShoeStore.Services
                 EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%") ||
                 EF.Functions.ILike(p.Brand.Name, $"%{request.SearchTerm}%"));
 
-
             switch (request.SortBy)
             {
 
@@ -72,7 +64,6 @@ namespace ShoeStore.Services
                     products = products.OrderByDescending(p => p.Price);
                     break;
 
-
                 case SortByOption.BrandAsc:
                     products = products.OrderBy(p => p.Brand.Name);
                     break;
@@ -86,7 +77,6 @@ namespace ShoeStore.Services
                     break;
             }
 
-
             request.Page = request.Page < 1 ? 1 : request.Page;
             request.PageSize = request.PageSize < 1 ? 30 : request.PageSize;
 
@@ -94,13 +84,11 @@ namespace ShoeStore.Services
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize);
 
-
             var brands = await _context.Brands
                 .Select(b => b.Name)
                 .OrderBy(Name => Name)
                 .ToArrayAsync();
 
-            //var productEntities = await products.ToListAsync();
             var result = await products
                 .Select(p => new ProductDto()
                 {
@@ -146,16 +134,12 @@ namespace ShoeStore.Services
                             FeatureText = feature.FeatureText,
                             SortOrder = feature.SortOrder
 
-
                         })
                         .ToList()
                 })
                 .ToListAsync();
 
-            //var result = _mapper.Map<List<ProductDto>>(productEntities);
-
-
-            GetProductsResposeDto response = new GetProductsResposeDto()
+            GetProductsResponseDto response = new GetProductsResponseDto()
             {
                 Products = result,
                 Brands = brands
@@ -165,9 +149,7 @@ namespace ShoeStore.Services
 
         }
 
-
-
-        public async Task<GetProductsResposeDto> GetfeaturedProductsAsync()
+        public async Task<GetProductsResponseDto> GetFeaturedProductsAsync()
         {
 
             var products = _context.Products
@@ -179,7 +161,6 @@ namespace ShoeStore.Services
                 .Include(p => p.ProductSizes)
                 .Take(3);
 
-
             var brands = await _context.Brands
                 .Select(b => b.Name)
                 .OrderBy(Name => Name)
@@ -230,15 +211,12 @@ namespace ShoeStore.Services
                             FeatureText = feature.FeatureText,
                             SortOrder = feature.SortOrder
 
-
                         })
                         .ToList()
                 })
                 .ToListAsync();
 
-
-
-            GetProductsResposeDto response = new GetProductsResposeDto()
+            GetProductsResponseDto response = new GetProductsResponseDto()
             {
                 Products = result,
                 Brands = brands
@@ -247,9 +225,6 @@ namespace ShoeStore.Services
             return response;
 
         }
-
-
-
 
         public async Task<GetSingleProductResponseDto?> GetProductByIdAsync(int productId)
         {
@@ -389,132 +364,5 @@ namespace ShoeStore.Services
                 RelatedProducts = relatedProductDtos
             };
         }
-
-
-
-
-
-        //public async Task<GetSingleProductResponseDto?> GetProductByIdAsync(int productId)
-        //{
-        //    GetSingleProductResponseDto response = new GetSingleProductResponseDto();
-
-        //    var product = await _context.Products
-        //        .Where(p => p.Id == productId)
-        //        .Include(p => p.Brand)
-        //        .Include(p => p.Audience)
-        //        .Include(p => p.ProductImages)
-        //        .Include(p => p.ProductFeatures)
-        //        .Include(p => p.ProductSizes)
-        //        .FirstOrDefaultAsync();
-
-        //    if (product != null)
-        //    {
-        //        var result = product
-        //            .Select(p => new ProductDto()
-        //            {
-        //                Audience = p.Audience.DisplayName,
-        //                BrandName = p.Brand.Name,
-        //                IsActive = p.IsActive,
-        //                DiscountPercentage = p.DiscountPercentage,
-        //                Id = p.Id,
-        //                Description = p.Description,
-        //                IsNew = p.IsNew,
-        //                Name = p.Name,
-        //                Price = p.Price,
-        //                Rating = p.Rating,
-        //                ReviewCount = p.ReviewCount,
-        //                TotalStock = p.ProductSizes.Sum(s => (int?)s.Stock) ?? 0,
-        //                ProductImages = p.ProductImages
-        //                    .OrderBy(img => img.SortOrder)
-        //                    .Select(img => new ProductImageDto()
-        //                    {
-        //                        Id = img.Id,
-        //                        ImagePath = img.ImagePath,
-        //                        IsPrimary = img.IsPrimary,
-        //                        SortOrder = img.SortOrder,
-        //                        ProductId = img.ProductId
-
-        //                    })
-        //                    .ToList(),
-        //                ProductSizes = p.ProductSizes
-        //                    .OrderBy(size => size.UkSize)
-        //                    .Select(size => new ProductSizeDto()
-        //                    {
-        //                        Id = size.Id,
-        //                        Size = size.UkSize,
-        //                        Stock = size.Stock,
-        //                        Barcode = size.Barcode,
-        //                        Sku = size.Sku
-        //                    })
-        //                    .ToList(),
-        //                ProductFeatures = p.ProductFeatures
-        //                    .Select(feature => new ProductFeatureDto()
-        //                    {
-        //                        Id = feature.Id,
-        //                        FeatureText = feature.FeatureText,
-        //                        SortOrder = feature.SortOrder
-
-
-        //                    })
-        //                    .ToList()
-        //            })
-        //            .ToListAsync();
-
-
-
-
-
-
-
-        //        var relatedProducts = await _context.Products
-        //            .Where(p => p.BrandId == product.BrandId &&
-        //                p.AudienceId == product.AudienceId &&
-        //                p.Id != productId)
-        //            .Take(3)
-        //            .ToListAsync();
-
-        //        if (!relatedProducts.Any() || relatedProducts.Count() < 3)
-        //        {
-        //            var remainingProducts = await _context.Products
-        //               .Where(p => p.AudienceId == product.AudienceId &&
-        //                   p.Id != productId)
-        //               .Include(p => p.Brand)
-        //               .Include(p => p.Audience)
-        //               .Take(3 - relatedProducts.Count())
-        //               .ToListAsync();
-
-        //            relatedProducts.AddRange(remainingProducts);
-
-        //        }
-        //        //var mappedProduct = _mapper.Map<ProductDto>(product);
-
-
-
-
-
-
-        //        //var mappedproductImages = _mapper.Map<List<AdditionalProductImageDto>>(productImages);
-        //        var mappedRelatedProducts = _mapper.Map<List<ProductDto>>(relatedProducts);
-
-
-        //        response.Product = mappedProduct;
-        //        response.AdditionalImages = mappedproductImages;
-        //        response.RelatedProducts = mappedRelatedProducts;
-
-        //        return response;
-        //    }
-
-        //    return null;
-        //}
-
-
-
-
-
-
-
-
-
-
     }
 }
