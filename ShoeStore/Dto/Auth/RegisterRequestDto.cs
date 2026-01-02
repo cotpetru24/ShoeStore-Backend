@@ -1,6 +1,4 @@
-﻿using Stripe;
-
-namespace ShoeStore.Dto.Auth
+﻿namespace ShoeStore.Dto.Auth
 {
     public class RegisterRequestDto
     {

@@ -1,18 +1,16 @@
 
-using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Configuration;
 using ShoeStore.DataContext.PostgreSQL.Models;
-using ShoeStore.Mappings;
 using ShoeStore.Services;
+using Stripe;
 using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using Stripe;
 using ProductService = ShoeStore.Services.ProductService;
 
 namespace ShoeStore
@@ -40,12 +38,6 @@ namespace ShoeStore
             builder.Services.AddHealthChecks().AddNpgSql(connStr, name: "postgres");
 
 
-
-
-            builder.Services.AddAutoMapper(cfg =>
-                {
-                    cfg.AddMaps(typeof(MappingProfile).Assembly);
-                });
 
             builder.Services.AddScoped<ProductService, ProductService>();
             builder.Services.AddScoped<AuthService, AuthService>();
@@ -125,19 +117,53 @@ namespace ShoeStore
                 await cmsSevice.SeedDefaultProfile();
             }
 
-                // Configure the HTTP request pipeline.
-                if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseExceptionHandler(errorApp =>
                 {
-                    app.UseSwagger();
-                    app.UseSwaggerUI();
-                }
+                    errorApp.Run(async context =>
+                    {
+                        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+                        var logger = context.RequestServices
+                            .GetRequiredService<ILogger<Program>>();
+
+                        logger.LogError(exception, "Unhandled exception");
+
+                        var problem = new ProblemDetails
+                        {
+                            Title = "Internal Server Error",
+                            Status = StatusCodes.Status500InternalServerError,
+                            Detail = "Unexpected error occurred."
+                        };
+
+                        context.Response.StatusCode = problem.Status.Value;
+                        context.Response.ContentType = "application/problem+json";
+
+                        await context.Response.WriteAsJsonAsync(problem);
+                    });
+                });
+            }
+            else
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+
 
             app.UseHttpsRedirection();
             app.UseCors("FrontEnd");
 
+
             app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

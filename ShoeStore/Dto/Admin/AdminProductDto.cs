@@ -1,6 +1,4 @@
 using ShoeStore.Dto.Product;
-using System;
-using System.Collections.Generic;
 
 namespace ShoeStore.Dto.Admin
 {
@@ -87,11 +85,13 @@ namespace ShoeStore.Dto.Admin
         public int? DiscountPercentage { get; set; }
     }
 
+
     public class CreateProductSizeRequestDto
     {
         public string Size { get; set; } = null!;
         public int Stock { get; set; }
     }
+
 
     public class CreateProductImageRequestDto
     {

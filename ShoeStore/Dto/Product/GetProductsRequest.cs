@@ -7,12 +7,9 @@
         public decimal? MinPrice { get; set; } = null;
         public decimal? MaxPrice { get; set; } = null;
         public string? SearchTerm { get; set; } = null;
-
         public decimal? Size { get; set; }
         public SortByOption? SortBy { get; set; } = null;
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 30;
-
     }
-
 }

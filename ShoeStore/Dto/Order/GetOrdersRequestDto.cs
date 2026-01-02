@@ -12,14 +12,15 @@ namespace ShoeStore.Dto.Order
     }
 
 
-    public enum SortBy 
-    { 
+    public enum SortBy
+    {
         Date,
         Total
     }
 
+
     public enum SortDirection
-    { 
+    {
         Ascending,
         Descending
     }

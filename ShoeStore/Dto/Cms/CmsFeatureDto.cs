@@ -2,7 +2,6 @@
 {
     public class CmsFeatureDto
     {
-
         public int Id { get; set; }
         public string IconClass { get; set; } = null!;
         public string Title { get; set; } = null!;

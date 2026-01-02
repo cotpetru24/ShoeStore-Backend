@@ -97,12 +97,12 @@ namespace ShoeStore.Controllers
         }
 
 
-        [Authorize(Roles = "Administrator")]
-        [HttpGet("users")]
-        public async Task<IActionResult> GetAllUsersAsync()
-        {
-            var users = await _userService.GetAllUsersAsync();
-            return Ok(users);
-        }
+        //[Authorize(Roles = "Administrator")]
+        //[HttpGet("users")]
+        //public async Task<IActionResult> GetAllUsersAsync()
+        //{
+        //    var users = await _userService.GetAllUsersAsync();
+        //    return Ok(users);
+        //}
     }
 }

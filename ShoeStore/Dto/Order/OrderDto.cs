@@ -1,5 +1,4 @@
 using ShoeStore.Dto.Payment;
-using System.ComponentModel.DataAnnotations;
 
 namespace ShoeStore.Dto.Order
 {

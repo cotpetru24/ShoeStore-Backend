@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace ShoeStore.Dto.Order
 {
     public class ShippingAddressDto

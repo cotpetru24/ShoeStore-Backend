@@ -21,17 +21,12 @@ namespace ShoeStore.Controllers
         #region Dashboard
 
         [HttpGet("dashboard")]
-        public async Task<IActionResult> GetDashboardStatsAsync()
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminDashboardDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<AdminDashboardDto>> GetDashboardStatsAsync()
         {
-            try
-            {
-                var stats = await _adminService.GetDashboardStatsAsync();
-                return Ok(stats);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching dashboard stats", error = ex.Message });
-            }
+            var stats = await _adminService.GetDashboardStatsAsync();
+            return Ok(stats);
         }
 
         #endregion
@@ -40,51 +35,39 @@ namespace ShoeStore.Controllers
         #region Users
 
         [HttpGet("users")]
-        public async Task<IActionResult> GetUsersAsync([FromQuery] GetAdminUsersRequestDto request)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminUsersListDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<AdminUsersListDto>> GetUsersAsync([FromQuery] GetAdminUsersRequestDto request)
         {
-            try
-            {
                 if (request.PageNumber < 1) request.PageNumber = 1;
                 if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
 
                 var users = await _adminService.GetUsersAsync(request);
                 return Ok(users);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching users", error = ex.Message });
-            }
         }
 
 
         [HttpGet("users/{userId}")]
-        public async Task<IActionResult> GetUserByIdAsync(string userId)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminUserDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(object))]
+        public async Task<ActionResult<AdminUserDto>> GetUserByIdAsync(string userId)
         {
-            try
-            {
                 var user = await _adminService.GetUserByIdAsync(userId);
                 if (user == null)
                     return NotFound(new { message = "User not found" });
 
                 return Ok(user);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching user", error = ex.Message });
-            }
         }
 
 
         [HttpPut("users/{userId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateUserAsync(string userId, [FromBody] UpdateUserRequestDto request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
                 var success = await _adminService.UpdateUserAsync(userId, request);
                 if (!success)
                 {
@@ -92,11 +75,6 @@ namespace ShoeStore.Controllers
                 }
 
                 return Ok(new { message = "User updated successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while updating user", error = ex.Message });
-            }
         }
 
 
@@ -224,7 +202,7 @@ namespace ShoeStore.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while fetching order", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while fetching the order", error = ex.Message });
             }
         }
 
@@ -320,7 +298,7 @@ namespace ShoeStore.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while fetching product", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while fetching the product", error = ex.Message });
             }
         }
 
@@ -337,13 +315,13 @@ namespace ShoeStore.Controllers
 
                 var response = await _adminService.CreateProductAsync(productToAdd);
                 if (response == null)
-                    return BadRequest(new { message = "Failed to create product" });
+                    return BadRequest(new { message = "Failed to create the product" });
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating product", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while creating the product", error = ex.Message });
             }
         }
 
@@ -368,7 +346,7 @@ namespace ShoeStore.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while updating product", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while updating the product", error = ex.Message });
             }
         }
 
@@ -388,7 +366,7 @@ namespace ShoeStore.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while deleting product", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while deleting the product", error = ex.Message });
             }
         }
 

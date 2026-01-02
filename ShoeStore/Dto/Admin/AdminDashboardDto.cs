@@ -1,5 +1,3 @@
-using System;
-
 namespace ShoeStore.Dto.Admin
 {
     public class AdminDashboardDto

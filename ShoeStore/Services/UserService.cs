@@ -119,12 +119,12 @@ namespace ShoeStore.Services
                 .Include(u => u.AspNetUser)
                 .Select(u => new GetAllUsersResponseDto
                 {
-                    Id = u.AspNetUser.Id,
-                    Email = u.AspNetUser.Email,
-                    EmailConfirmed = u.AspNetUser.EmailConfirmed,
-                    LockoutEnd = u.AspNetUser.LockoutEnd,
-                    LockoutEnabled = u.AspNetUser.LockoutEnabled,
-                    AccessFailedCount = u.AspNetUser.AccessFailedCount
+                    //Id = u.AspNetUser.Id,
+                    //Email = u.AspNetUser.Email,
+                    //EmailConfirmed = u.AspNetUser.EmailConfirmed,
+                    //LockoutEnd = u.AspNetUser.LockoutEnd,
+                    //LockoutEnabled = u.AspNetUser.LockoutEnabled,
+                    //AccessFailedCount = u.AspNetUser.AccessFailedCount
                 })
                 .ToListAsync();
 

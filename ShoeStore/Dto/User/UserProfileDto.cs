@@ -1,5 +1,3 @@
-using System;
-
 namespace ShoeStore.Dto.User
 {
     public class UserProfileDto

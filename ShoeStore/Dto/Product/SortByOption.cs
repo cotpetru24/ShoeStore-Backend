@@ -1,7 +1,7 @@
-﻿namespace ShoeStore.Dto.Product
-{
-    using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
+namespace ShoeStore.Dto.Product
+{
     public enum SortByOption
     {
         [EnumMember(Value = "name-asc")]
@@ -22,5 +22,4 @@
         [EnumMember(Value = "brand-desc")]
         BrandDesc
     }
-
 }

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace ShoeStore.Dto.Admin
 {
     public class AdminUserDto

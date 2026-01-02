@@ -1,7 +1,4 @@
 using ShoeStore.Dto.Order;
-using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace ShoeStore.Dto.Admin
 {
@@ -35,7 +32,6 @@ namespace ShoeStore.Dto.Admin
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
         public AdminOrdersStatsDto AdminOrdersStats { get; set; }
-
     }
 
 
@@ -45,8 +41,6 @@ namespace ShoeStore.Dto.Admin
         public int TotalPendingOrdersCount { get; set; }
         public int TotalProcessingOrdersCount { get; set; }
         public int TotalDeliveredOrdersCount { get; set; }
-
-
     }
 
 
