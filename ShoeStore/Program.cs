@@ -15,7 +15,7 @@ using ProductService = ShoeStore.Services.ProductService;
 
 namespace ShoeStore
 {
-    public class Program
+    public partial class Program
     {
         public static async Task Main(string[] args)
         {
@@ -26,16 +26,26 @@ namespace ShoeStore
 
             var isDevelopment = builder.Environment.IsDevelopment();
 
-            if (isDevelopment)
+            // Register DbContext - use connection string from config or environment variable
+            var connectionString = isDevelopment
+                ? builder.Configuration.GetConnectionString("ShoeStoreConnection")
+                : Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                    ?? builder.Configuration.GetConnectionString("ShoeStoreConnection");
+
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 builder.Services.AddDbContext<ShoeStoreContext>(options =>
                 {
-                    options.UseNpgsql(builder.Configuration.GetConnectionString("ShoeStoreConnection"));
+                    options.UseNpgsql(connectionString);
                 });
             }
 
-            var connStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-            builder.Services.AddHealthChecks().AddNpgSql(connStr, name: "postgres");
+            // Register health checks only if connection string is available
+            var healthCheckConnStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+            if (!string.IsNullOrEmpty(healthCheckConnStr))
+            {
+                builder.Services.AddHealthChecks().AddNpgSql(healthCheckConnStr, name: "postgres");
+            }
 
 
 
@@ -45,6 +55,10 @@ namespace ShoeStore
             builder.Services.AddScoped<OrderService, OrderService>();
             builder.Services.AddScoped<UserService, UserService>();
             builder.Services.AddScoped<AdminService, AdminService>();
+            builder.Services.AddScoped<AdminDashboardService, AdminDashboardService>();
+            builder.Services.AddScoped<AdminUserService, AdminUserService>();
+            builder.Services.AddScoped<AdminOrderService, AdminOrderService>();
+            builder.Services.AddScoped<AdminProductService, AdminProductService>();
             builder.Services.AddScoped<CmsService, CmsService>();
 
             builder.Services.AddIdentity<IdentityUser, IdentityRole>()
@@ -105,16 +119,20 @@ namespace ShoeStore
 
             var app = builder.Build();
 
-            using (var scope = app.Services.CreateScope())
+            // Skip seeding in test environment
+            if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
             {
-                var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-                await authService.SeedAdminAccount();
-            }
+                using (var scope = app.Services.CreateScope())
+                {
+                    var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
+                    await authService.SeedAdminAccount();
+                }
 
-            using (var scope = app.Services.CreateScope())
-            {
-                var cmsSevice = scope.ServiceProvider.GetRequiredService<CmsService>();
-                await cmsSevice.SeedDefaultProfile();
+                using (var scope = app.Services.CreateScope())
+                {
+                    var cmsSevice = scope.ServiceProvider.GetRequiredService<CmsService>();
+                    await cmsSevice.SeedDefaultProfile();
+                }
             }
 
             if (app.Environment.IsDevelopment())
@@ -124,37 +142,44 @@ namespace ShoeStore
             }
 
 
-            if (!app.Environment.IsDevelopment())
+            app.UseExceptionHandler(errorApp =>
             {
-                app.UseExceptionHandler(errorApp =>
+                errorApp.Run(async context =>
                 {
-                    errorApp.Run(async context =>
+                    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+                    var logger = context.RequestServices
+                        .GetRequiredService<ILogger<Program>>();
+
+                    if (exception != null)
                     {
-                        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-
-                        var logger = context.RequestServices
-                            .GetRequiredService<ILogger<Program>>();
-
                         logger.LogError(exception, "Unhandled exception");
+                    }
 
-                        var problem = new ProblemDetails
-                        {
-                            Title = "Internal Server Error",
-                            Status = StatusCodes.Status500InternalServerError,
-                            Detail = "Unexpected error occurred."
-                        };
+                    var (statusCode, title) = exception switch
+                    {
+                        UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+                        KeyNotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
+                        ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"),
+                        InvalidOperationException => (StatusCodes.Status409Conflict, "Conflict"),
+                        _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+                    };
 
-                        context.Response.StatusCode = problem.Status.Value;
-                        context.Response.ContentType = "application/problem+json";
+                    var problem = new ProblemDetails
+                    {
+                        Title = title,
+                        Status = statusCode,
+                        Detail = isDevelopment ? exception?.Message : "Unexpected error occurred."
+                    };
 
-                        await context.Response.WriteAsJsonAsync(problem);
-                    });
+                    problem.Extensions["traceId"] = context.TraceIdentifier;
+
+                    context.Response.StatusCode = problem.Status.Value;
+                    context.Response.ContentType = "application/problem+json";
+
+                    await context.Response.WriteAsJsonAsync(problem);
                 });
-            }
-            else
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            });
 
 
 

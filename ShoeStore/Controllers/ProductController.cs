@@ -17,60 +17,38 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(GetProductsResponseDto))]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetProductsResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetProductsAsync([FromQuery] GetProductsRequest request)
         {
-            try
-            {
-                var products = await _service.GetProductsAsync(request);
-
-                return Ok(products);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var products = await _service.GetProductsAsync(request);
+            return Ok(products);
         }
 
 
         [HttpGet("featured")]
-        [ProducesResponseType(200, Type = typeof(GetProductsResponseDto))]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetProductsResponseDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetFeaturedProductsAsync()
         {
-            try
-            {
-                var products = await _service.GetFeaturedProductsAsync();
-
-                return Ok(products);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var products = await _service.GetFeaturedProductsAsync();
+            return Ok(products);
         }
 
 
         [HttpGet("{productId}")]
-        [ProducesResponseType(200, Type = typeof(ProductDto))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetSingleProductResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<GetSingleProductResponseDto>?> GetProductByIdAsync(int productId)
         {
-            try
-            {
-                var product = await _service.GetProductByIdAsync(productId);
+            var product = await _service.GetProductByIdAsync(productId);
+            if (product == null) 
+                return NotFound(new { message = $"Product with ID {productId} not found" });
 
-                if (product == null) return NotFound(productId);
-
-                return Ok(product);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(product);
         }
     }
 }

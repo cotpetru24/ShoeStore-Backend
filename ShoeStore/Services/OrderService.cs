@@ -3,19 +3,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Order;
+using ShoeStore.Dto.Payment;
+using Stripe;
+using Stripe.Climate;
 
 namespace ShoeStore.Services
 {
     public class OrderService
     {
         private readonly ShoeStoreContext _context;
-        private readonly IMapper _mapper;
         private readonly PaymentService _paymentService;
 
-        public OrderService(ShoeStoreContext injectedContext, IMapper injectedMapper, PaymentService paymentService)
+        public OrderService(ShoeStoreContext injectedContext, PaymentService paymentService)
         {
             _context = injectedContext;
-            _mapper = injectedMapper;
             _paymentService = paymentService;
         }
 
@@ -120,7 +121,7 @@ namespace ShoeStore.Services
 
                 var total = subtotal + request.ShippingCost - request.Discount;
 
-                var order = new Order
+                var order = new DataContext.PostgreSQL.Models.Order
                 {
                     UserId = userId,
                     OrderStatusId = orderStatus.Id,
@@ -173,7 +174,7 @@ namespace ShoeStore.Services
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.Payments)
-                    .ThenInclude(p=>p.PaymentStatus)
+                    .ThenInclude(p => p.PaymentStatus)
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentMethod)
                 .FirstOrDefaultAsync();
@@ -183,7 +184,75 @@ namespace ShoeStore.Services
             if (order == null)
                 return null;
 
-            return _mapper.Map<OrderDto>(order);
+            return new OrderDto
+            {
+                Id = order.Id,
+                UserId = order.UserId,
+                OrderStatusId = order.OrderStatusId,
+                OrderStatusName = order.OrderStatus.DisplayName,
+                Subtotal = order.Subtotal,
+                ShippingCost = order.ShippingCost,
+                Discount = order.Discount,
+                Total = order.Total,
+                Notes = order.Notes,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt,
+
+                ShippingAddress = order.ShippingAddress == null
+            ? null!
+            : new ShippingAddressDto
+            {
+                Id = order.ShippingAddress.Id,
+                UserId = order.ShippingAddress.UserId,
+                AddressLine1 = order.ShippingAddress.AddressLine1,
+                City = order.ShippingAddress.City,
+                County = order.ShippingAddress.County,
+                Postcode = order.ShippingAddress.Postcode,
+                Country = order.ShippingAddress.Country
+            },
+
+                BillingAddress = order.BillingAddress == null
+            ? null!
+            : new BillingAddressDto
+            {
+                Id = order.BillingAddress.Id,
+                UserId = order.BillingAddress.UserId,
+                AddressLine1 = order.BillingAddress.AddressLine1,
+                City = order.BillingAddress.City,
+                County = order.BillingAddress.County,
+                Postcode = order.BillingAddress.Postcode,
+                Country = order.BillingAddress.Country
+            },
+
+                OrderItems = order.OrderItems.Select(oi => new OrderItemDto
+                {
+                    Id = oi.Id,
+                    Quantity = oi.Quantity,
+                    ProductPrice = oi.ProductPrice,
+                    OrderId = oi.OrderId,
+                    CreatedAt = oi.CreatedAt,
+                    ProductId = oi.ProductSize.ProductId,
+                    ProductName = oi.ProductSize.Product.Name,
+                    BrandName = oi.ProductSize.Product.Brand.Name,
+                    Size = oi.ProductSize.UkSize.ToString()
+                }).ToList(),
+
+                Payment = order.Payments.FirstOrDefault() == null
+            ? null
+            : new PaymentDto
+            {
+                OrderId = order.Id,
+                BillingEmail = order.Payments.First(p => p.OrderId == order.Id).BillingEmail,
+                BillingName = order.Payments.First(p => p.OrderId == order.Id).BillingName,
+                CardBrand = order.Payments.First(p => p.OrderId == order.Id).CardBrand,
+                CardLast4 = order.Payments.First(p => p.OrderId == order.Id).CardLast4,
+                Currency = order.Payments.First(p => p.OrderId == order.Id).Currency,
+                PaymentMethod = order.Payments.First(p => p.OrderId == order.Id).PaymentMethod.DisplayName,
+                ReceiptUrl = order.Payments.First(p => p.OrderId == order.Id).ReceiptUrl,
+                Status = order.Payments.First(p => p.OrderId == order.Id).PaymentStatus.DisplayName,
+            }
+            };
+
         }
 
         public async Task<GetOrdersResponseDto> GetOrdersAsync(GetOrdersRequestDto request, string userId)
@@ -223,7 +292,74 @@ namespace ShoeStore.Services
                 .Take(request.PageSize)
                 .ToListAsync();
 
-            var orderDtos = _mapper.Map<List<OrderDto>>(orders);
+            var orderDtos = orders.Select(order => new OrderDto()
+            {
+                Id = order.Id,
+                UserId = order.UserId,
+                OrderStatusId = order.OrderStatusId,
+                OrderStatusName = order.OrderStatus.DisplayName,
+                Subtotal = order.Subtotal,
+                ShippingCost = order.ShippingCost,
+                Discount = order.Discount,
+                Total = order.Total,
+                Notes = order.Notes,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt,
+
+                ShippingAddress = order.ShippingAddress == null
+                        ? null!
+                        : new ShippingAddressDto
+                        {
+                            Id = order.ShippingAddress.Id,
+                            UserId = order.ShippingAddress.UserId,
+                            AddressLine1 = order.ShippingAddress.AddressLine1,
+                            City = order.ShippingAddress.City,
+                            County = order.ShippingAddress.County,
+                            Postcode = order.ShippingAddress.Postcode,
+                            Country = order.ShippingAddress.Country
+                        },
+
+                BillingAddress = order.BillingAddress == null
+                        ? null!
+                        : new BillingAddressDto
+                        {
+                            Id = order.BillingAddress.Id,
+                            UserId = order.BillingAddress.UserId,
+                            AddressLine1 = order.BillingAddress.AddressLine1,
+                            City = order.BillingAddress.City,
+                            County = order.BillingAddress.County,
+                            Postcode = order.BillingAddress.Postcode,
+                            Country = order.BillingAddress.Country
+                        },
+
+                OrderItems = order.OrderItems.Select(oi => new OrderItemDto
+                {
+                    Id = oi.Id,
+                    Quantity = oi.Quantity,
+                    ProductPrice = oi.ProductPrice,
+                    OrderId = oi.OrderId,
+                    CreatedAt = oi.CreatedAt,
+                    ProductId = oi.ProductSize.ProductId,
+                    ProductName = oi.ProductSize.Product.Name,
+                    BrandName = oi.ProductSize.Product.Brand.Name,
+                    Size = oi.ProductSize.UkSize.ToString()
+                }).ToList(),
+
+                Payment = order.Payments.FirstOrDefault() == null
+                        ? null
+                        : new PaymentDto
+                        {
+                            OrderId = order.Id,
+                            BillingEmail = order.Payments.First(p => p.OrderId == order.Id).BillingEmail,
+                            BillingName = order.Payments.First(p => p.OrderId == order.Id).BillingName,
+                            CardBrand = order.Payments.First(p => p.OrderId == order.Id).CardBrand,
+                            CardLast4 = order.Payments.First(p => p.OrderId == order.Id).CardLast4,
+                            Currency = order.Payments.First(p => p.OrderId == order.Id).Currency,
+                            PaymentMethod = order.Payments.First(p => p.OrderId == order.Id).PaymentMethod.DisplayName,
+                            ReceiptUrl = order.Payments.First(p => p.OrderId == order.Id).ReceiptUrl,
+                            Status = order.Payments.First(p => p.OrderId == order.Id).PaymentStatus.DisplayName,
+                        }
+            }).ToList();
 
             var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
 
@@ -270,7 +406,16 @@ namespace ShoeStore.Services
                 .Where(a => a.UserId == userId)
                 .ToListAsync();
 
-            return _mapper.Map<List<ShippingAddressDto>>(addresses);
+            return addresses.Select(a => new ShippingAddressDto
+            {
+                Id = a.Id,
+                UserId = a.UserId,
+                AddressLine1 = a.AddressLine1,
+                City = a.City,
+                County = a.County,
+                Postcode = a.Postcode,
+                Country = a.Country
+            }).ToList();
         }
 
         public async Task<ShippingAddressDto?> GetShippingAddressByIdAsync(int addressId, string userId)
@@ -282,7 +427,16 @@ namespace ShoeStore.Services
             if (address == null)
                 return null;
 
-            return _mapper.Map<ShippingAddressDto>(address);
+            return new ShippingAddressDto
+            {
+                Id = address.Id,
+                UserId = address.UserId,
+                AddressLine1 = address.AddressLine1,
+                City = address.City,
+                County = address.County,
+                Postcode = address.Postcode,
+                Country = address.Country
+            };
         }
 
         public async Task<ShippingAddressResponseDto> UpdateShippingAddressAsync(int addressId, UpdateShippingAddressRequestDto request, string userId)
@@ -362,7 +516,16 @@ namespace ShoeStore.Services
                 .Where(a => a.Id == id)
                 .ToListAsync();
 
-            return _mapper.Map<List<BillingAddressDto>>(addresses);
+            return addresses.Select(a => new BillingAddressDto
+            {
+                Id = a.Id,
+                UserId = a.UserId,
+                AddressLine1 = a.AddressLine1,
+                City = a.City,
+                County = a.County,
+                Postcode = a.Postcode,
+                Country = a.Country
+            }).ToList();
         }
 
         public async Task<BillingAddressDto?> GetBillingAddressByIdAsync(int addressId, string userId)
@@ -374,7 +537,16 @@ namespace ShoeStore.Services
             if (address == null)
                 return null;
 
-            return _mapper.Map<BillingAddressDto>(address);
+            return new BillingAddressDto
+            {
+                Id = address.Id,
+                UserId = address.UserId,
+                AddressLine1 = address.AddressLine1,
+                City = address.City,
+                County = address.County,
+                Postcode = address.Postcode,
+                Country = address.Country
+            };
         }
 
 
@@ -399,7 +571,7 @@ namespace ShoeStore.Services
 
                 bool? refundResponse = null;
 
-                if ( rowsaffected == 1)
+                if (rowsaffected == 1)
                 {
                     refundResponse = await _paymentService.RefundPayment(orderId);
 

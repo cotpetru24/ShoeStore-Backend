@@ -59,7 +59,8 @@ namespace ShoeStore.Services
                 {
                     FirstName = "FirstName",
                     LastName = "LastName",
-                    AspNetUserId =user.Id
+                    AspNetUserId = user.Id,
+                    CreatedAt = DateTime.UtcNow
                 };
                 await _context.UserDetails.AddAsync(newUserDetails);
                 await _context.SaveChangesAsync();

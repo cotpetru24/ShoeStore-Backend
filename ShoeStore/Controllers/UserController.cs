@@ -19,6 +19,10 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet("profile")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserProfileDto))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserProfileAsync()
         {
             var userId = User.FindFirst("Id")?.Value;
@@ -36,6 +40,10 @@ namespace ShoeStore.Controllers
 
 
         [HttpPut("profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateUserProfileAsync([FromBody] UpdateUserProfileRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -60,6 +68,10 @@ namespace ShoeStore.Controllers
 
 
         [HttpPut("change-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -84,6 +96,9 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet("stats")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserStatsDto))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserStatsAsync()
         {
             var userId = User.FindFirst("Id")?.Value;

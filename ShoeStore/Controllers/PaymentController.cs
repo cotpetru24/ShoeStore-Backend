@@ -19,84 +19,70 @@ namespace ShoeStore.Controllers
 
 
         [HttpPost("createPaymentIntent")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreatePaymentIntent([FromBody] long amount)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var paymentIntent = await _paymentService.CreatePaymentIntent(amount);
-                return Ok(new { clientSecret = paymentIntent.ClientSecret });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var paymentIntent = await _paymentService.CreatePaymentIntent(amount);
+            return Ok(new { clientSecret = paymentIntent.ClientSecret });
         }
 
 
         [HttpPost("storePaymentDetails")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> StorePaymentDetails([FromBody] StorePaymentDto storePaymentDto)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var userEmail = User.FindFirst("Email")?.Value;
+            var userEmail = User.FindFirst("Email")?.Value;
+            var paymentIntent = await _paymentService.StorePaymentDetails(storePaymentDto, userId, userEmail);
 
-                var paymentIntent = await _paymentService.StorePaymentDetails(storePaymentDto, userId, userEmail);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok();
         }
 
 
         [HttpPut("RefundPayment")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> RefundPayment([FromBody] int orderId)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var refundResult = await _paymentService.RefundPayment(orderId);
-                if (refundResult == null)
-                    return NotFound("Payment intent not found or could not be refunded.");
-                if (refundResult == false)
-                {
-                    return StatusCode(500, "Failed to refund.");
-                }
-                return Ok("Payment refunded successfully.");
-            }
-            catch (Exception ex)
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
+
+            var refundResult = await _paymentService.RefundPayment(orderId);
+            if (refundResult == null)
+                return NotFound(new { message = "Payment intent not found or could not be refunded." });
+            
+            if (refundResult == false)
             {
-                return StatusCode(500, "Internal server error");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to refund." });
             }
+            
+            return Ok(new { message = "Payment refunded successfully." });
         }
     }
 }

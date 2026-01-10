@@ -30,7 +30,7 @@ namespace ShoeStore.Tests
             var context = CreateContext();
             var mapper = Mock.Of<IMapper>();
             var paymentService = CreatePaymentService(context);
-            var orderService = new OrderService(context, mapper, paymentService);
+            var orderService = new OrderService(context, paymentService);
 
             var brand = new Brand { Id = 1, Name = "Nike" };
             var audience = new Audience { Id = 1, Code = "men", DisplayName = "Men" };
@@ -89,7 +89,7 @@ namespace ShoeStore.Tests
             var context = CreateContext();
             var mapper = Mock.Of<IMapper>();
             var paymentService = CreatePaymentService(context);
-            var orderService = new OrderService(context, mapper, paymentService);
+            var orderService = new OrderService(context, paymentService);
 
             var brand = new Brand { Id = 1, Name = "Nike" };
             var audience = new Audience { Id = 1, Code = "men", DisplayName = "Men" };
@@ -146,7 +146,7 @@ namespace ShoeStore.Tests
             var context = CreateContext();
             var mapper = Mock.Of<IMapper>();
             var paymentService = CreatePaymentService(context);
-            var orderService = new OrderService(context, mapper, paymentService);
+            var orderService = new OrderService(context, paymentService);
 
             var brand = new Brand { Id = 1, Name = "Nike" };
             var audience = new Audience { Id = 1, Code = "men", DisplayName = "Men" };

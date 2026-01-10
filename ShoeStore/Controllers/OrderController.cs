@@ -20,338 +20,231 @@ namespace ShoeStore.Controllers
 
 
         [HttpPost]
-        [ProducesResponseType(200, Type = typeof(PlaceOrderResponseDto))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PlaceOrderResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequestDto request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var result = await _orderService.PlaceOrderAsync(request, userId);
-                return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var result = await _orderService.PlaceOrderAsync(request, userId);
+            return Ok(result);
         }
 
 
         [HttpGet("{orderId}")]
-        [ProducesResponseType(200, Type = typeof(OrderDto))]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetOrder(int orderId)
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var order = await _orderService.GetOrderByIdAsync(orderId, userId);
-                if (order == null)
-                    return NotFound($"Order with ID {orderId} not found");
+            var order = await _orderService.GetOrderByIdAsync(orderId, userId);
+            if (order == null)
+                return NotFound(new { message = $"Order with ID {orderId} not found" });
 
-                return Ok(order);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(order);
         }
 
 
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(GetOrdersResponseDto))]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetOrdersResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetOrders([FromQuery] GetOrdersRequestDto request)
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            if (request.Page < 1) request.Page = 1;
+            if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
 
-                var orders = await _orderService.GetOrdersAsync(request, userId);
-                return Ok(orders);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
+
+            var orders = await _orderService.GetOrdersAsync(request, userId);
+            return Ok(orders);
         }
 
 
         [HttpPost("shipping-addresses")]
-        [ProducesResponseType(200, Type = typeof(ShippingAddressResponseDto))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShippingAddressResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateShippingAddress([FromBody] CreateShippingAddressRequestDto request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var result = await _orderService.CreateShippingAddressAsync(request, userId);
-
-                return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var result = await _orderService.CreateShippingAddressAsync(request, userId);
+            return Ok(result);
         }
 
 
         [HttpGet("shipping-addresses")]
-        [ProducesResponseType(200, Type = typeof(List<ShippingAddressDto>))]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShippingAddressDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetShippingAddresses()
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var addresses = await _orderService.GetShippingAddressesAsync(userId);
-                return Ok(addresses);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var addresses = await _orderService.GetShippingAddressesAsync(userId);
+            return Ok(addresses);
         }
 
 
         [HttpGet("shipping-addresses/{addressId}")]
-        [ProducesResponseType(200, Type = typeof(ShippingAddressDto))]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShippingAddressDto))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetShippingAddress(int addressId)
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var address = await _orderService.GetShippingAddressByIdAsync(addressId, userId);
-                if (address == null)
-                    return NotFound($"Shipping address with ID {addressId} not found");
+            var address = await _orderService.GetShippingAddressByIdAsync(addressId, userId);
+            if (address == null)
+                return NotFound(new { message = $"Shipping address with ID {addressId} not found" });
 
-                return Ok(address);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(address);
         }
 
+
         [HttpPut("shipping-addresses/{addressId}")]
-        [ProducesResponseType(200, Type = typeof(ShippingAddressResponseDto))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShippingAddressResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateShippingAddress(int addressId, [FromBody] UpdateShippingAddressRequestDto request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var result = await _orderService.UpdateShippingAddressAsync(addressId, request, userId);
-                return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var result = await _orderService.UpdateShippingAddressAsync(addressId, request, userId);
+            return Ok(result);
         }
 
 
         [HttpDelete("shipping-addresses/{addressId}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteShippingAddress(int addressId)
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var result = await _orderService.DeleteShippingAddressAsync(addressId, userId);
-                if (!result)
-                    return NotFound($"Shipping address with ID {addressId} not found");
+            var result = await _orderService.DeleteShippingAddressAsync(addressId, userId);
+            if (!result)
+                return NotFound(new { message = $"Shipping address with ID {addressId} not found" });
 
-                return Ok(new { message = "Shipping address deleted successfully" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(new { message = "Shipping address deleted successfully" });
         }
 
 
         [HttpPost("billing-addresses")]
         [Authorize]
-        [ProducesResponseType(200, Type = typeof(BillingAddressResponseDto))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BillingAddressResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateBillingAddress([FromBody] CreateBillingAddressRequestDto request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                return Ok();
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok();
         }
 
 
         [HttpGet("billing-addresses")]
         [Authorize]
-        [ProducesResponseType(200, Type = typeof(List<BillingAddressDto>))]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<BillingAddressDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetBillingAddresses()
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
-                var id = 123;
-                var addresses = await _orderService.GetBillingAddressesAsync(id);
-                return Ok(addresses);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
+            
+            var id = 123;
+            var addresses = await _orderService.GetBillingAddressesAsync(id);
+            return Ok(addresses);
         }
 
 
         [HttpGet("billing-addresses/{addressId}")]
         [Authorize]
-        [ProducesResponseType(200, Type = typeof(BillingAddressDto))]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BillingAddressDto))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetBillingAddress(int addressId)
         {
-            try
-            {
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var address = await _orderService.GetBillingAddressByIdAsync(addressId, userId);
-                if (address == null)
-                    return NotFound("Billing address not found");
+            var address = await _orderService.GetBillingAddressByIdAsync(addressId, userId);
+            if (address == null)
+                return NotFound(new { message = "Billing address not found" });
 
-                return Ok(address);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(address);
         }
 
 
         [HttpPut("cancel-order/{orderId}")]
-        [ProducesResponseType(200, Type = typeof(OrderDto))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CancelOrder(int orderId)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                var userId = User.FindFirst("Id")?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User not authenticated");
+            var userId = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
 
-                var result = await _orderService.CancelOrder(orderId, userId);
+            var result = await _orderService.CancelOrder(orderId, userId);
+            if (result == null) 
+                return NotFound(new { message = "Order not found or cannot be cancelled" });
 
-                if (result == null) return NotFound("Order not found or cannot be cancelled");
-
-                return Ok(result);
-                                   }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(result);
         }
     }
 }
