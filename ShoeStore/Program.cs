@@ -54,7 +54,8 @@ namespace ShoeStore
             builder.Services.AddScoped<PaymentService, PaymentService>();
             builder.Services.AddScoped<OrderService, OrderService>();
             builder.Services.AddScoped<UserService, UserService>();
-            builder.Services.AddScoped<AdminService, AdminService>();
+            // Delete this comment when cleaning up
+            //builder.Services.AddScoped<AdminService, AdminService>();
             builder.Services.AddScoped<AdminDashboardService, AdminDashboardService>();
             builder.Services.AddScoped<AdminUserService, AdminUserService>();
             builder.Services.AddScoped<AdminOrderService, AdminOrderService>();
