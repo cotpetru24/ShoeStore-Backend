@@ -21,6 +21,7 @@ namespace ShoeStore.Services
                 .Include(p => p.Audience)
                 .Include(p => p.ProductSizes)
                 .Include(p => p.ProductFeatures)
+                .Include(p => p.ProductImages)
                 .AsQueryable();
 
             // Apply filters
@@ -133,7 +134,17 @@ namespace ShoeStore.Services
                     Stock = ps.Stock
                 }).ToList();
 
-                var productImages = new List<ProductImageDto>();
+                var productImages = product.ProductImages
+                    .OrderBy(img => img.SortOrder)
+                    .Select(img => new ProductImageDto()
+                    {
+                        Id = img.Id,
+                        ImagePath = img.ImagePath,
+                        SortOrder = img.SortOrder,
+                        IsPrimary = img.IsPrimary,
+                        ProductId = img.ProductId
+                    })
+                    .ToList();
 
                 adminProducts.Add(new AdminProductDto
                 {

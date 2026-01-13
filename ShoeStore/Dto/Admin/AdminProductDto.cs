@@ -9,7 +9,6 @@ namespace ShoeStore.Dto.Admin
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public decimal? OriginalPrice { get; set; }
-        public string? ImagePath { get; set; }
         public int TotalStock => ProductSizes?.Sum(s => s.Stock) ?? 0;
         public int? BrandId { get; set; }
         public string? BrandName { get; set; }
