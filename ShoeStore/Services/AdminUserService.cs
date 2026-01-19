@@ -373,7 +373,7 @@ namespace ShoeStore.Services
                 {
                     Id = p.Id,
                     PaymentMethod = p.PaymentMethod?.DisplayName ?? "Unknown",
-                    PaymentStatusName = p.PaymentStatus?.DisplayName ?? "Unknown",
+                    PaymentStatus = p.PaymentStatus?.DisplayName ?? "Unknown",
                     Amount = p.Amount,
                     TransactionId = p.TransactionId,
                     CreatedAt = p.CreatedAt

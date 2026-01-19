@@ -9,8 +9,9 @@ namespace ShoeStore.Dto.Order
         public decimal ProductPrice { get; set; }
         public int Quantity { get; set; }
         public string? Size { get; set; }
+        public string Barcode { get; set; }
         public DateTime? CreatedAt { get; set; }
-        public string? ImagePath { get; set; }
+        public string? MainImage { get; set; }
         public string? BrandName {get; set; }
     }
 }

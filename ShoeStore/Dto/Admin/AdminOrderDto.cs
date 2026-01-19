@@ -88,7 +88,7 @@ namespace ShoeStore.Dto.Admin
     public class AdminPaymentDto
     {
         public int Id { get; set; }
-        public string? PaymentStatusName { get; set; }
+        public string? PaymentStatus { get; set; }
         public string? TransactionId { get; set; }
         public DateTime? CreatedAt { get; set; }
         public decimal Amount { get; set; }

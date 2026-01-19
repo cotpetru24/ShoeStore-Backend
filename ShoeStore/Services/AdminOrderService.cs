@@ -125,7 +125,7 @@ namespace ShoeStore.Services
                 {
                     Id = p.Id,
                     PaymentMethod = p.PaymentMethod?.DisplayName ?? "Unknown",
-                    PaymentStatusName = p.PaymentStatus?.DisplayName ?? "Unknown",
+                    PaymentStatus = p.PaymentStatus?.DisplayName ?? "Unknown",
                     Amount = p.Amount,
                     TransactionId = p.TransactionId,
                     CreatedAt = p.CreatedAt
@@ -211,12 +211,20 @@ namespace ShoeStore.Services
         {
             var order = await _context.Orders
                 .Include(o => o.OrderStatus)
-                .Include(o => o.ShippingAddress)
+                          .Include(o => o.ShippingAddress)
+                          .Include(o => o.UserDetail)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(ps => ps.ProductSize)
-                    .ThenInclude(p => p.Product)
-                    .ThenInclude(p => p.Brand)
+                    .ThenInclude(oi => oi.ProductSize)
+                    .ThenInclude(ps => ps.Product)
+                        .ThenInclude(p => p.Brand)
+
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductSize)
+                    .ThenInclude(ps => ps.Product)
+                        //.ThenInclude(p => p.ProductImages)
+                        .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
+
                 .Include(o => o.Payments)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payments)
@@ -235,8 +243,8 @@ namespace ShoeStore.Services
                 UserId = order.UserId!,
                 UserEmail = user?.Email ?? "",
                 UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                OrderStatusName = order.OrderStatus?.DisplayName,
-                OrderStatusCode = order.OrderStatus?.Code,
+                OrderStatusName = order.OrderStatus.DisplayName,
+                OrderStatusCode = order.OrderStatus.Code,
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
@@ -247,8 +255,8 @@ namespace ShoeStore.Services
                 ShippingAddress = order.ShippingAddress != null ? new AdminShippingAddressDto
                 {
                     Id = order.ShippingAddress.Id,
-                    FirstName = "",
-                    LastName = "",
+                    FirstName = order.UserDetail.FirstName,
+                    LastName = order.UserDetail.LastName,
                     AddressLine1 = order.ShippingAddress.AddressLine1,
                     AddressLine2 = "",
                     City = order.ShippingAddress.City,
@@ -260,8 +268,8 @@ namespace ShoeStore.Services
                 BillingAddress = order.BillingAddress != null ? new AdminBillingAddressDto
                 {
                     Id = order.BillingAddress.Id,
-                    FirstName = "",
-                    LastName = "",
+                    FirstName = order.UserDetail.FirstName,
+                    LastName = order.UserDetail.LastName,
                     AddressLine1 = order.BillingAddress.AddressLine1,
                     AddressLine2 = "",
                     City = order.BillingAddress.City,
@@ -277,12 +285,21 @@ namespace ShoeStore.Services
                     ProductName = oi.ProductName ?? "Unknown Product",
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
-                    BrandName = oi.ProductSize.Product.Brand.Name
+                    BrandName = oi.ProductSize.Product.Brand.Name,
+                    Barcode = oi.ProductSize.Barcode,
+                    MainImage = oi.ProductSize.Product.ProductImages
+                        .Select(pi => pi.ImagePath)
+                        .FirstOrDefault(),
+                    //MainImage = oi.ProductSize.Product.ProductImages
+                    //    .Where(pi => pi.ProductId == oi.ProductSize.Product.Id && pi.IsPrimary)
+                    //    .Select(pi => pi.ImagePath)
+                    //    .FirstOrDefault(),
+                    Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
                 Payment = order.Payments.Select(p => new AdminPaymentDto
                 {
                     Id = p.Id,
-                    PaymentStatusName = p.PaymentStatus?.DisplayName ?? "Unknown",
+                    PaymentStatus = p.PaymentStatus?.DisplayName ?? "Unknown",
                     Amount = p.Amount,
                     TransactionId = p.TransactionId,
                     CreatedAt = p.CreatedAt,
