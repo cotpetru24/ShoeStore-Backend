@@ -1,6 +1,6 @@
 namespace ShoeStore.Dto.Order
 {
-    public class ShippingAddressDto
+    public class AddressDto
     {
         public int Id { get; set; }
         public string? UserId { get; set; }

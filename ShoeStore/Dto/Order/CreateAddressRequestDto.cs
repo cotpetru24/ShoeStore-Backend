@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ShoeStore.Dto.Order
 {
-    public class CreateBillingAddressRequestDto
+    public class CreateAddressRequestDto
     {
         [Required(ErrorMessage = "Address line 1 is required")]
         public string AddressLine1 { get; set; } = null!;
@@ -19,16 +19,3 @@ namespace ShoeStore.Dto.Order
         public string Country { get; set; } = "United Kingdom";
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

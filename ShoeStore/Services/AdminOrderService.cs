@@ -146,31 +146,23 @@ namespace ShoeStore.Services
                     Notes = order.Notes,
                     CreatedAt = order.CreatedAt,
                     UpdatedAt = order.UpdatedAt,
-                    ShippingAddress = order.ShippingAddress != null ? new AdminShippingAddressDto
+                    ShippingAddress = order.ShippingAddress != null ? new AddressDto
                     {
                         Id = order.ShippingAddress.Id,
-                        FirstName = "",
-                        LastName = "",
                         AddressLine1 = order.ShippingAddress.AddressLine1,
-                        AddressLine2 = "",
                         City = order.ShippingAddress.City,
-                        State = order.ShippingAddress.County,
-                        PostalCode = order.ShippingAddress.Postcode,
+                        County = order.ShippingAddress.County,
+                        Postcode = order.ShippingAddress.Postcode,
                         Country = order.ShippingAddress.Country,
-                        PhoneNumber = ""
                     } : null,
-                    BillingAddress = order.BillingAddress != null ? new AdminBillingAddressDto
+                    BillingAddress = order.BillingAddress != null ? new AddressDto
                     {
                         Id = order.BillingAddress.Id,
-                        FirstName = "",
-                        LastName = "",
                         AddressLine1 = order.BillingAddress.AddressLine1,
-                        AddressLine2 = "",
                         City = order.BillingAddress.City,
-                        State = order.BillingAddress.County,
-                        PostalCode = order.BillingAddress.Postcode,
+                        County = order.BillingAddress.County,
+                        Postcode = order.BillingAddress.Postcode,
                         Country = order.BillingAddress.Country,
-                        PhoneNumber = ""
                     } : null,
                     OrderItems = orderItems,
                     Payment = payment
@@ -252,31 +244,23 @@ namespace ShoeStore.Services
                 Notes = order.Notes,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
-                ShippingAddress = order.ShippingAddress != null ? new AdminShippingAddressDto
+                ShippingAddress = order.ShippingAddress != null ? new AddressDto
                 {
                     Id = order.ShippingAddress.Id,
-                    FirstName = order.UserDetail.FirstName,
-                    LastName = order.UserDetail.LastName,
                     AddressLine1 = order.ShippingAddress.AddressLine1,
-                    AddressLine2 = "",
                     City = order.ShippingAddress.City,
-                    State = order.ShippingAddress.County,
-                    PostalCode = order.ShippingAddress.Postcode,
+                    County = order.ShippingAddress.County,
+                    Postcode = order.ShippingAddress.Postcode,
                     Country = order.ShippingAddress.Country,
-                    PhoneNumber = ""
                 } : null,
-                BillingAddress = order.BillingAddress != null ? new AdminBillingAddressDto
+                BillingAddress = order.BillingAddress != null ? new AddressDto
                 {
                     Id = order.BillingAddress.Id,
-                    FirstName = order.UserDetail.FirstName,
-                    LastName = order.UserDetail.LastName,
                     AddressLine1 = order.BillingAddress.AddressLine1,
-                    AddressLine2 = "",
                     City = order.BillingAddress.City,
-                    State = order.BillingAddress.County,
-                    PostalCode = order.BillingAddress.Postcode,
+                    County = order.BillingAddress.County,
+                    Postcode = order.BillingAddress.Postcode,
                     Country = order.BillingAddress.Country,
-                    PhoneNumber = ""
                 } : null,
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
@@ -290,10 +274,7 @@ namespace ShoeStore.Services
                     MainImage = oi.ProductSize.Product.ProductImages
                         .Select(pi => pi.ImagePath)
                         .FirstOrDefault(),
-                    //MainImage = oi.ProductSize.Product.ProductImages
-                    //    .Where(pi => pi.ProductId == oi.ProductSize.Product.Id && pi.IsPrimary)
-                    //    .Select(pi => pi.ImagePath)
-                    //    .FirstOrDefault(),
+
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
                 Payment = order.Payments.Select(p => new AdminPaymentDto

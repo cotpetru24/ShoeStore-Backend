@@ -200,7 +200,7 @@ namespace ShoeStore.Services
 
                 ShippingAddress = order.ShippingAddress == null
             ? null!
-            : new ShippingAddressDto
+            : new AddressDto
             {
                 Id = order.ShippingAddress.Id,
                 UserId = order.ShippingAddress.UserId,
@@ -213,7 +213,7 @@ namespace ShoeStore.Services
 
                 BillingAddress = order.BillingAddress == null
             ? null!
-            : new BillingAddressDto
+            : new AddressDto
             {
                 Id = order.BillingAddress.Id,
                 UserId = order.BillingAddress.UserId,
@@ -308,7 +308,7 @@ namespace ShoeStore.Services
 
                 ShippingAddress = order.ShippingAddress == null
                         ? null!
-                        : new ShippingAddressDto
+                        : new AddressDto
                         {
                             Id = order.ShippingAddress.Id,
                             UserId = order.ShippingAddress.UserId,
@@ -321,7 +321,7 @@ namespace ShoeStore.Services
 
                 BillingAddress = order.BillingAddress == null
                         ? null!
-                        : new BillingAddressDto
+                        : new AddressDto
                         {
                             Id = order.BillingAddress.Id,
                             UserId = order.BillingAddress.UserId,
@@ -377,7 +377,7 @@ namespace ShoeStore.Services
 
 
         // Shipping Address Methods
-        public async Task<ShippingAddressResponseDto> CreateShippingAddressAsync(CreateShippingAddressRequestDto request, string userId)
+        public async Task<CreateAddressResponseDto> CreateShippingAddressAsync(CreateAddressRequestDto request, string userId)
         {
             var newAddress = new ShippingAddress
             {
@@ -392,7 +392,7 @@ namespace ShoeStore.Services
             _context.ShippingAddresses.Add(newAddress);
             await _context.SaveChangesAsync();
 
-            return new ShippingAddressResponseDto
+            return new CreateAddressResponseDto
             {
                 Id = newAddress.Id,
                 Message = "Shipping address created successfully",
@@ -400,13 +400,13 @@ namespace ShoeStore.Services
             };
         }
 
-        public async Task<List<ShippingAddressDto>> GetShippingAddressesAsync(string userId)
+        public async Task<List<AddressDto>> GetShippingAddressesAsync(string userId)
         {
             var addresses = await _context.ShippingAddresses
                 .Where(a => a.UserId == userId)
                 .ToListAsync();
 
-            return addresses.Select(a => new ShippingAddressDto
+            return addresses.Select(a => new AddressDto
             {
                 Id = a.Id,
                 UserId = a.UserId,
@@ -418,7 +418,7 @@ namespace ShoeStore.Services
             }).ToList();
         }
 
-        public async Task<ShippingAddressDto?> GetShippingAddressByIdAsync(int addressId, string userId)
+        public async Task<AddressDto?> GetShippingAddressByIdAsync(int addressId, string userId)
         {
             var address = await _context.ShippingAddresses
                 .Where(a => a.Id == addressId && a.UserId == userId)
@@ -427,7 +427,7 @@ namespace ShoeStore.Services
             if (address == null)
                 return null;
 
-            return new ShippingAddressDto
+            return new AddressDto
             {
                 Id = address.Id,
                 UserId = address.UserId,
@@ -439,7 +439,7 @@ namespace ShoeStore.Services
             };
         }
 
-        public async Task<ShippingAddressResponseDto> UpdateShippingAddressAsync(int addressId, UpdateShippingAddressRequestDto request, string userId)
+        public async Task<CreateAddressResponseDto> UpdateShippingAddressAsync(int addressId, AddressDto request, string userId)
         {
             var address = await _context.ShippingAddresses
                 .Where(a => a.Id == addressId && a.UserId == userId)
@@ -456,7 +456,7 @@ namespace ShoeStore.Services
 
             await _context.SaveChangesAsync();
 
-            return new ShippingAddressResponseDto
+            return new CreateAddressResponseDto
             {
                 Id = address.Id,
                 Message = "Shipping address updated successfully",
@@ -487,7 +487,7 @@ namespace ShoeStore.Services
         }
 
         // Billing Address Methods
-        public async Task<BillingAddressResponseDto> CreateBillingAddressAsync(CreateShippingAddressRequestDto request, string userId)
+        public async Task<CreateAddressResponseDto> CreateBillingAddressAsync(CreateAddressRequestDto request, string userId)
         {
             var newAddress = new BillingAddress
             {
@@ -502,7 +502,7 @@ namespace ShoeStore.Services
             _context.BillingAddresses.Add(newAddress);
             await _context.SaveChangesAsync();
 
-            return new BillingAddressResponseDto
+            return new CreateAddressResponseDto
             {
                 Id = newAddress.Id,
                 Message = "Billing address created successfully",
@@ -510,13 +510,13 @@ namespace ShoeStore.Services
             };
         }
 
-        public async Task<List<BillingAddressDto>> GetBillingAddressesAsync(int id)
+        public async Task<List<AddressDto>> GetBillingAddressesAsync(int id)
         {
             var addresses = await _context.BillingAddresses
                 .Where(a => a.Id == id)
                 .ToListAsync();
 
-            return addresses.Select(a => new BillingAddressDto
+            return addresses.Select(a => new AddressDto
             {
                 Id = a.Id,
                 UserId = a.UserId,
@@ -528,7 +528,7 @@ namespace ShoeStore.Services
             }).ToList();
         }
 
-        public async Task<BillingAddressDto?> GetBillingAddressByIdAsync(int addressId, string userId)
+        public async Task<AddressDto?> GetBillingAddressByIdAsync(int addressId, string userId)
         {
             var address = await _context.BillingAddresses
                 .Where(a => a.Id == addressId)
@@ -537,7 +537,7 @@ namespace ShoeStore.Services
             if (address == null)
                 return null;
 
-            return new BillingAddressDto
+            return new AddressDto
             {
                 Id = address.Id,
                 UserId = address.UserId,

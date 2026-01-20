@@ -17,8 +17,8 @@ namespace ShoeStore.Dto.Admin
         public string? Notes { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public AdminShippingAddressDto? ShippingAddress { get; set; }
-        public AdminBillingAddressDto? BillingAddress { get; set; }
+        public AddressDto? ShippingAddress { get; set; }
+        public AddressDto? BillingAddress { get; set; }
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
         public AdminPaymentDto Payment { get; set; } = new AdminPaymentDto();
     }
@@ -41,36 +41,6 @@ namespace ShoeStore.Dto.Admin
         public int TotalPendingOrdersCount { get; set; }
         public int TotalProcessingOrdersCount { get; set; }
         public int TotalDeliveredOrdersCount { get; set; }
-    }
-
-
-    public class AdminShippingAddressDto
-    {
-        public int Id { get; set; }
-        public string FirstName { get; set; } = null!;
-        public string LastName { get; set; } = null!;
-        public string AddressLine1 { get; set; } = null!;
-        public string? AddressLine2 { get; set; }
-        public string City { get; set; } = null!;
-        public string State { get; set; } = null!;
-        public string PostalCode { get; set; } = null!;
-        public string Country { get; set; } = null!;
-        public string? PhoneNumber { get; set; }
-    }
-
-
-    public class AdminBillingAddressDto
-    {
-        public int Id { get; set; }
-        public string FirstName { get; set; } = null!;
-        public string LastName { get; set; } = null!;
-        public string AddressLine1 { get; set; } = null!;
-        public string? AddressLine2 { get; set; }
-        public string City { get; set; } = null!;
-        public string State { get; set; } = null!;
-        public string PostalCode { get; set; } = null!;
-        public string Country { get; set; } = null!;
-        public string? PhoneNumber { get; set; }
     }
 
 

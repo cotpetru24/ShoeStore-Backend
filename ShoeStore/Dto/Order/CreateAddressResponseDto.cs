@@ -1,6 +1,6 @@
 namespace ShoeStore.Dto.Order
 {
-    public class ShippingAddressResponseDto
+    public class CreateAddressResponseDto
     {
         public int Id { get; set; }
         public string Message { get; set; } = string.Empty;

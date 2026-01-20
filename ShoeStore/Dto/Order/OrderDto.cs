@@ -12,8 +12,8 @@ namespace ShoeStore.Dto.Order
         public decimal ShippingCost { get; set; }
         public decimal Discount { get; set; }
         public decimal Total { get; set; }
-        public ShippingAddressDto ShippingAddress { get; set; }
-        public BillingAddressDto BillingAddress { get; set; }
+        public AddressDto ShippingAddress { get; set; }
+        public AddressDto BillingAddress { get; set; }
         public string? Notes { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

@@ -38,7 +38,7 @@ namespace ShoeStore.Dto.Admin
         public bool? IsBlocked { get; set; }
         public DateTime? LockoutEnd { get; set; }
         public string? Email { get; set; }
-        public List<string> Roles { get; set; } = new List<string>();
+        public List<string>? Roles { get; set; } = new List<string>();
     }
 
 
