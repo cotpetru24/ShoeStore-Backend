@@ -4,6 +4,7 @@
     {
         public int Id { get; set; }
         public string ProfileName { get; set; } = null!;
+        public bool IsDefault { get; set; }
         public bool IsActive { get; set; }
         public string WebsiteName { get; set; } = null!;
         public string? Tagline { get; set; }

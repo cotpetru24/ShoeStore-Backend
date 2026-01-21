@@ -281,6 +281,7 @@ namespace ShoeStore.Services
             {
                 Id = profile.Id,
                 ProfileName = profile.Name,
+                IsDefault = profile.IsDefault,
                 IsActive = profile.IsActive,
                 WebsiteName = profile.SiteName,
                 Tagline = profile.Tagline,
