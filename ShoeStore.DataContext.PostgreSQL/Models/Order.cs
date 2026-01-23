@@ -9,8 +9,8 @@ public partial class Order
     public decimal ShippingCost { get; set; }
     public decimal Discount { get; set; }
     public decimal Total { get; set; }
-    public int? ShippingAddressId { get; set; }
-    public int? BillingAddressId { get; set; }
+    public int ShippingAddressId { get; set; }
+    public int BillingAddressId { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -23,7 +23,7 @@ public partial class Order
 
     public virtual UserDetail? UserDetail { get; set; }
 
-    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public virtual Payment Payment { get; set; }
 
     public virtual ShippingAddress? ShippingAddress { get; set; }
 

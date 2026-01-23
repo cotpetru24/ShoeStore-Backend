@@ -115,8 +115,9 @@ namespace ShoeStore.Services
             existingPayment.PaymentStatusId = 6;
             existingPayment.UpdatedAt = DateTime.Now;
 
-            int rowsAffected = await _dbContext.SaveChangesAsync();
-            if (rowsAffected != 1) return false;
+            await _dbContext.SaveChangesAsync();
+            //int rowsAffected = await _dbContext.SaveChangesAsync();
+            //if (rowsAffected != 1) return false;
 
             return true;
         }

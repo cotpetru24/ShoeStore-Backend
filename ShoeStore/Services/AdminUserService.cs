@@ -314,9 +314,9 @@ namespace ShoeStore.Services
                 .Include(o => o.OrderItems)
                     .ThenInclude(ps => ps.ProductSize)
                     .ThenInclude(p => p.Product)
-                .Include(o => o.Payments)
+                .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payments)
+                .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentStatus)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
@@ -369,15 +369,15 @@ namespace ShoeStore.Services
                     BrandName = oi.ProductSize.Product?.Brand?.Name
                 }).ToList();
 
-                var payment = order.Payments.Select(p => new AdminPaymentDto
+                var payment = new AdminPaymentDto
                 {
-                    Id = p.Id,
-                    PaymentMethod = p.PaymentMethod?.DisplayName ?? "Unknown",
-                    PaymentStatus = p.PaymentStatus?.DisplayName ?? "Unknown",
-                    Amount = p.Amount,
-                    TransactionId = p.TransactionId,
-                    CreatedAt = p.CreatedAt
-                }).FirstOrDefault();
+                    Id = order.Payment.Id,
+                    PaymentMethod = order.Payment.PaymentMethod.DisplayName,
+                    PaymentStatus = order.Payment.PaymentStatus.DisplayName,
+                    Amount = order.Payment.Amount,
+                    TransactionId = order.Payment.TransactionId,
+                    CreatedAt = order.Payment.CreatedAt
+                };
 
                 adminOrders.Add(new AdminOrderDto
                 {

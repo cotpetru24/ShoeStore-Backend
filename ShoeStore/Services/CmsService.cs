@@ -239,6 +239,7 @@ namespace ShoeStore.Services
                     LastModified = p.UpdatedAt,
                     CreatedAt = p.CreatedAt
                 })
+                .OrderByDescending(p => p.LastModified)
                 .ToListAsync();
         }
 

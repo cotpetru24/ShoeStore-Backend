@@ -253,10 +253,11 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("updated_at");
 
-            entity.HasOne(d => d.Order).WithMany(p => p.Payments)
-                .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("payments_order_id_fkey");
+            entity.HasOne(d => d.Order)
+                  .WithOne(p => p.Payment)
+                  .HasForeignKey<Payment>(d => d.OrderId)
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .HasConstraintName("payments_order_id_fkey");
 
             entity.HasOne(d => d.PaymentMethod).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.PaymentMethodId)

@@ -105,4 +105,23 @@ namespace ShoeStore.Dto.Admin
         Descending,
     }
 
+    public enum OrderStatusEnum
+    {
+        Pending = 1,
+        Processing = 2,
+        Shipped = 3,
+        Delivered = 4,
+        Cancelled = 5,
+        Returned = 7,
+    }
+
+    public enum PaymentStatusEnum
+    {
+        Pending = 1,
+        Authorised = 3,
+        Failed = 4,
+        Refunded = 6,
+        Paid = 12
+    }
+
 }

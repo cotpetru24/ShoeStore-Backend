@@ -1,7 +1,9 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
 using ShoeStore.Dto.Payment;
 using Stripe;
@@ -164,30 +166,40 @@ namespace ShoeStore.Services
 
         public async Task<OrderDto?> GetOrderByIdAsync(int orderId, string userId)
         {
+
+
             var order = await _context.Orders
                 .Where(o => o.Id == orderId && o.UserId == userId)
                 .Include(o => o.OrderStatus)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(ps => ps.ProductSize)
-                    .ThenInclude(p => p.Product)
-                    .ThenInclude(p => p.Brand)
-                .Include(o => o.ShippingAddress)
+                          .Include(o => o.ShippingAddress)
+                          .Include(o => o.UserDetail)
                 .Include(o => o.BillingAddress)
-                .Include(o => o.Payments)
-                    .ThenInclude(p => p.PaymentStatus)
-                .Include(o => o.Payments)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductSize)
+                    .ThenInclude(ps => ps.Product)
+                        .ThenInclude(p => p.Brand)
+
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductSize)
+                    .ThenInclude(ps => ps.Product)
+                        .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
+
+                .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .FirstOrDefaultAsync();
+                .Include(o => o.Payment)
+                    .ThenInclude(s => s.PaymentStatus)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
 
 
 
             if (order == null)
                 return null;
 
-            return new OrderDto
+            var response = new OrderDto
             {
                 Id = order.Id,
-                UserId = order.UserId,
+                UserId = order.UserId!,
                 OrderStatusId = order.OrderStatusId,
                 OrderStatusName = order.OrderStatus.DisplayName,
                 Subtotal = order.Subtotal,
@@ -198,69 +210,96 @@ namespace ShoeStore.Services
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
 
-                ShippingAddress = order.ShippingAddress == null
-            ? null!
-            : new AddressDto
-            {
-                Id = order.ShippingAddress.Id,
-                UserId = order.ShippingAddress.UserId,
-                AddressLine1 = order.ShippingAddress.AddressLine1,
-                City = order.ShippingAddress.City,
-                County = order.ShippingAddress.County,
-                Postcode = order.ShippingAddress.Postcode,
-                Country = order.ShippingAddress.Country
-            },
+                ShippingAddress = new AddressDto
+                {
+                    Id = order.ShippingAddress.Id,
+                    UserId = order.ShippingAddress.UserId,
+                    AddressLine1 = order.ShippingAddress.AddressLine1,
+                    City = order.ShippingAddress.City,
+                    County = order.ShippingAddress.County,
+                    Postcode = order.ShippingAddress.Postcode,
+                    Country = order.ShippingAddress.Country,
+                },
 
-                BillingAddress = order.BillingAddress == null
-            ? null!
-            : new AddressDto
-            {
-                Id = order.BillingAddress.Id,
-                UserId = order.BillingAddress.UserId,
-                AddressLine1 = order.BillingAddress.AddressLine1,
-                City = order.BillingAddress.City,
-                County = order.BillingAddress.County,
-                Postcode = order.BillingAddress.Postcode,
-                Country = order.BillingAddress.Country
-            },
+                BillingAddress = new AddressDto
+                {
+                    Id = order.BillingAddress.Id,
+                    UserId = order.BillingAddress.UserId,
+                    AddressLine1 = order.BillingAddress.AddressLine1,
+                    City = order.BillingAddress.City,
+                    County = order.BillingAddress.County,
+                    Postcode = order.BillingAddress.Postcode,
+                    Country = order.BillingAddress.Country,
+                },
 
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
-                    Quantity = oi.Quantity,
-                    ProductPrice = oi.ProductPrice,
-                    OrderId = oi.OrderId,
+                    OrderId = order.Id,
                     CreatedAt = oi.CreatedAt,
                     ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductSize.Product.Name,
+                    ProductName = oi.ProductName,
+                    Quantity = oi.Quantity,
+                    ProductPrice = oi.ProductPrice,
                     BrandName = oi.ProductSize.Product.Brand.Name,
+                    Barcode = oi.ProductSize.Barcode,
+                    MainImage = oi.ProductSize.Product.ProductImages
+                        .Select(pi => pi.ImagePath)
+                        .FirstOrDefault(),
+
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
 
-                Payment = order.Payments.FirstOrDefault() == null
-            ? null
-            : new PaymentDto
-            {
-                OrderId = order.Id,
-                BillingEmail = order.Payments.First(p => p.OrderId == order.Id).BillingEmail,
-                BillingName = order.Payments.First(p => p.OrderId == order.Id).BillingName,
-                CardBrand = order.Payments.First(p => p.OrderId == order.Id).CardBrand,
-                CardLast4 = order.Payments.First(p => p.OrderId == order.Id).CardLast4,
-                Currency = order.Payments.First(p => p.OrderId == order.Id).Currency,
-                PaymentMethod = order.Payments.First(p => p.OrderId == order.Id).PaymentMethod.DisplayName,
-                ReceiptUrl = order.Payments.First(p => p.OrderId == order.Id).ReceiptUrl,
-                Status = order.Payments.First(p => p.OrderId == order.Id).PaymentStatus.DisplayName,
-            }
+                Payment = new PaymentDto
+                {
+                    Amount = order.Payment.Amount,
+                    Currency = order.Payment.Currency,
+                    CardBrand = order.Payment.CardBrand,
+                    CardLast4 = order.Payment.CardLast4,
+                    BillingName = order.Payment.BillingName,
+                    BillingEmail = order.Payment.BillingEmail,
+                    PaymentMethod = order.Payment.PaymentMethod.DisplayName,
+                    ReceiptUrl = order.Payment.ReceiptUrl,
+                    OrderId = order.Id,
+                    Status = order.Payment.PaymentStatus.DisplayName
+                }
             };
+
+            return response;
+
 
         }
 
         public async Task<GetOrdersResponseDto> GetOrdersAsync(GetOrdersRequestDto request, string userId)
         {
+            //var query = _context.Orders
+            //    .Where(o => o.UserId == userId)
+            //    .Include(o => o.OrderStatus)
+            //    .Include(o => o.OrderItems)
+            //    .AsQueryable();
+
+
             var query = _context.Orders
                 .Where(o => o.UserId == userId)
                 .Include(o => o.OrderStatus)
+                          .Include(o => o.ShippingAddress)
+                          .Include(o => o.UserDetail)
+                .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductSize)
+                    .ThenInclude(ps => ps.Product)
+                        .ThenInclude(p => p.Brand)
+
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductSize)
+                    .ThenInclude(ps => ps.Product)
+                        //.ThenInclude(p => p.ProductImages)
+                        .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
+
+                .Include(o => o.Payment)
+                    .ThenInclude(p => p.PaymentMethod)
+                .Include(o => o.Payment)
+                    .ThenInclude(s => s.PaymentStatus)
                 .AsQueryable();
 
             // Apply filters
@@ -335,30 +374,31 @@ namespace ShoeStore.Services
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
+                    ProductId = oi.ProductSize.ProductId,
+                    ProductName = oi.ProductName ?? "Unknown Product",
                     Quantity = oi.Quantity,
                     ProductPrice = oi.ProductPrice,
-                    OrderId = oi.OrderId,
-                    CreatedAt = oi.CreatedAt,
-                    ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductSize.Product.Name,
                     BrandName = oi.ProductSize.Product.Brand.Name,
+                    Barcode = oi.ProductSize.Barcode,
+                    MainImage = oi.ProductSize.Product.ProductImages
+                        .Select(pi => pi.ImagePath)
+                        .FirstOrDefault(),
+
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
 
-                Payment = order.Payments.FirstOrDefault() == null
-                        ? null
-                        : new PaymentDto
-                        {
-                            OrderId = order.Id,
-                            BillingEmail = order.Payments.First(p => p.OrderId == order.Id).BillingEmail,
-                            BillingName = order.Payments.First(p => p.OrderId == order.Id).BillingName,
-                            CardBrand = order.Payments.First(p => p.OrderId == order.Id).CardBrand,
-                            CardLast4 = order.Payments.First(p => p.OrderId == order.Id).CardLast4,
-                            Currency = order.Payments.First(p => p.OrderId == order.Id).Currency,
-                            PaymentMethod = order.Payments.First(p => p.OrderId == order.Id).PaymentMethod.DisplayName,
-                            ReceiptUrl = order.Payments.First(p => p.OrderId == order.Id).ReceiptUrl,
-                            Status = order.Payments.First(p => p.OrderId == order.Id).PaymentStatus.DisplayName,
-                        }
+                Payment = new PaymentDto
+                {
+                    OrderId = order.Id,
+                    BillingEmail = order.Payment.BillingEmail,
+                    BillingName = order.Payment.BillingName,
+                    CardBrand = order.Payment.CardBrand,
+                    CardLast4 = order.Payment.CardLast4,
+                    Currency = order.Payment.Currency,
+                    PaymentMethod = order.Payment.PaymentMethod.DisplayName,
+                    ReceiptUrl = order.Payment.ReceiptUrl,
+                    Status = order.Payment.PaymentStatus.DisplayName,
+                }
             }).ToList();
 
             var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
@@ -552,38 +592,38 @@ namespace ShoeStore.Services
 
         public async Task<OrderDto?> CancelOrder(int orderId, string userId)
         {
-            var existingOrder = await _context.Orders
-                .Where(o => o.Id == orderId && o.UserId == userId)
-                .FirstOrDefaultAsync();
-
-            if (existingOrder == null
-                || existingOrder.OrderStatusId == 5
-                || existingOrder.OrderStatusId == 6
-                || existingOrder.OrderStatusId == 7) return null;
-
-            existingOrder.OrderStatusId = 5;
-
-
+            await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                var rowsaffected = await _context.SaveChangesAsync();
+                var existingOrder = await _context.Orders
+                .Where(o => o.Id == orderId && o.UserId == userId)
+                .FirstOrDefaultAsync();
 
-                bool? refundResponse = null;
+                if (existingOrder == null
+                    || existingOrder.OrderStatusId == 5
+                    || existingOrder.OrderStatusId == 6
+                    || existingOrder.OrderStatusId == 7) return null;
 
-                if (rowsaffected == 1)
+                existingOrder.OrderStatusId = 5;
+
+                bool? refundResponse = await _paymentService.RefundPayment(orderId);
+
+                if (refundResponse != true)
                 {
-                    refundResponse = await _paymentService.RefundPayment(orderId);
-
+                    await transaction.RollbackAsync();
+                    return null;
                 }
-                if (refundResponse != true) return null;
 
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return await GetOrderByIdAsync(orderId, userId);
             }
             catch (Exception)
             {
-                return null;
+                await transaction.RollbackAsync();
+                throw;
             }
         }
     }

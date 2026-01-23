@@ -10,13 +10,16 @@ namespace ShoeStore.Services
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ShoeStoreContext _context;
+        private readonly PaymentService _paymentService;
 
         public AdminOrderService(
             UserManager<IdentityUser> userManager,
-            ShoeStoreContext context)
+            ShoeStoreContext context,
+            PaymentService paymentService)
         {
             _userManager = userManager;
             _context = context;
+            _paymentService = paymentService;
         }
 
         public async Task<AdminOrderListDto> GetOrdersAsync(GetAdminOrdersRequestDto request)
@@ -28,9 +31,9 @@ namespace ShoeStore.Services
                 .Include(o => o.OrderItems)
                     .ThenInclude(ps => ps.ProductSize)
                     .ThenInclude(p => p.Product)
-                .Include(o => o.Payments)
+                .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payments)
+                .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentStatus)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
@@ -121,15 +124,15 @@ namespace ShoeStore.Services
                     ProductPrice = oi.ProductPrice,
                 }).ToList();
 
-                var payment = order.Payments.Select(p => new AdminPaymentDto
+                var payment = new AdminPaymentDto
                 {
-                    Id = p.Id,
-                    PaymentMethod = p.PaymentMethod?.DisplayName ?? "Unknown",
-                    PaymentStatus = p.PaymentStatus?.DisplayName ?? "Unknown",
-                    Amount = p.Amount,
-                    TransactionId = p.TransactionId,
-                    CreatedAt = p.CreatedAt
-                }).FirstOrDefault();
+                    Id = order.Payment.Id,
+                    PaymentMethod = order.Payment.PaymentMethod.DisplayName,
+                    PaymentStatus = order.Payment.PaymentStatus.DisplayName,
+                    Amount = order.Payment.Amount,
+                    TransactionId = order.Payment.TransactionId,
+                    CreatedAt = order.Payment.CreatedAt
+                };
 
                 adminOrders.Add(new AdminOrderDto
                 {
@@ -214,12 +217,11 @@ namespace ShoeStore.Services
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
-                        //.ThenInclude(p => p.ProductImages)
                         .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
 
-                .Include(o => o.Payments)
+                .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payments)
+                .Include(o => o.Payment)
                     .ThenInclude(s => s.PaymentStatus)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
@@ -229,7 +231,7 @@ namespace ShoeStore.Services
             var userDetail = await _context.UserDetails
                 .FirstOrDefaultAsync(ud => ud.AspNetUserId == order.UserId);
 
-            return new AdminOrderDto
+            var response =  new AdminOrderDto
             {
                 Id = order.Id,
                 UserId = order.UserId!,
@@ -277,38 +279,80 @@ namespace ShoeStore.Services
 
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
-                Payment = order.Payments.Select(p => new AdminPaymentDto
+                Payment =new AdminPaymentDto
                 {
-                    Id = p.Id,
-                    PaymentStatus = p.PaymentStatus?.DisplayName ?? "Unknown",
-                    Amount = p.Amount,
-                    TransactionId = p.TransactionId,
-                    CreatedAt = p.CreatedAt,
-                    Currency = p.Currency,
-                    CardBrand = p.CardBrand,
-                    CardLast4 = p.CardLast4,
-                    BillingName = p.BillingName,
-                    BillingEmail = p.BillingEmail,
-                    PaymentMethod = p.PaymentMethod.DisplayName,
-                    ReceiptUrl = p.ReceiptUrl
-                }).FirstOrDefault()
+                    Id = order.Payment.Id,
+                    PaymentStatus = order.Payment.PaymentStatus.DisplayName,
+                    Amount = order.Payment.Amount,
+                    TransactionId = order.Payment.TransactionId,
+                    CreatedAt = order.Payment.CreatedAt,
+                    Currency = order.Payment.Currency,
+                    CardBrand = order.Payment.CardBrand,
+                    CardLast4 = order.Payment.CardLast4,
+                    BillingName = order.Payment.BillingName,
+                    BillingEmail = order.Payment.BillingEmail,
+                    PaymentMethod = order.Payment.PaymentMethod.DisplayName,
+                    ReceiptUrl = order.Payment.ReceiptUrl
+                }
             };
+            return response;
         }
 
         public async Task<bool> UpdateOrderStatusAsync(int orderId, UpdateOrderStatusRequestDto request)
         {
-            var order = await _context.Orders.FindAsync(orderId);
-            if (order == null) return false;
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
 
-            order.OrderStatusId = request.OrderStatusId;
-            order.UpdatedAt = DateTime.UtcNow;
-            if (!string.IsNullOrEmpty(request.Notes))
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Payment)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null) return false;
+
+                // refunded orders cannot be amended
+                if (order.Payment.PaymentStatusId == (int)PaymentStatusEnum.Refunded &&
+                    request.OrderStatusId != (int)OrderStatusEnum.Cancelled &&
+                    request.OrderStatusId != (int)OrderStatusEnum.Returned)
+                {
+                    throw new InvalidOperationException(
+                        "Cannot change order status after refund."
+                    );
+                }
+
+                // if cancelling => refund
+                if (request.OrderStatusId == (int)OrderStatusEnum.Cancelled &&
+                    order.Payment.PaymentStatusId != (int)PaymentStatusEnum.Refunded)
+                {
+                    var refundResult =
+                        await _paymentService.RefundPayment(order.Id);
+
+                    if (refundResult != true)
+                    {
+                        await transaction.RollbackAsync();
+                        return false;
+                    }
+                }
+
+                order.OrderStatusId = request.OrderStatusId;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                if (!string.IsNullOrEmpty(request.Notes))
             {
                 order.Notes = $"{order.Notes}. Note added on {DateTime.UtcNow.ToString()} => {request.Notes}";
             }
 
-            var rowsAffected = await _context.SaveChangesAsync();
-            return rowsAffected == 1;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

@@ -25,5 +25,5 @@ public partial class Payment
 
     public virtual PaymentMethod? PaymentMethod { get; set; }
 
-    public virtual PaymentStatus? PaymentStatus { get; set; }
+    public virtual PaymentStatus PaymentStatus { get; set; }
 }
