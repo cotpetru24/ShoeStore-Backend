@@ -45,7 +45,7 @@ namespace ShoeStore.Controllers
         public async Task<ActionResult<GetSingleProductResponseDto>?> GetProductByIdAsync(int productId)
         {
             var product = await _service.GetProductByIdAsync(productId);
-            if (product == null) 
+            if (product == null)
                 return NotFound(new { message = $"Product with ID {productId} not found" });
 
             return Ok(product);

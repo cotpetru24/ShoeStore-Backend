@@ -118,7 +118,7 @@ namespace ShoeStore.Services
 
                 await _userManager.AddToRoleAsync(newUser, request.Role);
             }
-            else 
+            else
             {
                 await _userManager.AddToRoleAsync(newUser, _customerRole);
             }

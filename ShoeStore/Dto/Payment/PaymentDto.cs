@@ -1,4 +1,6 @@
-﻿namespace ShoeStore.Dto.Payment
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ShoeStore.Dto.Payment
 {
     public class PaymentDto
     {
@@ -13,4 +15,18 @@
         public string? PaymentMethod { get; set; }
         public string? ReceiptUrl { get; set; }
     }
+
+
+    public class CreatePaymentIntentRequestDto
+    {
+        [Range(1, long.MaxValue)]
+        public required long Amount { get; set; }
+    }
+
+
+    public class CreatePaymentIntentResponseDto
+    {
+        public string ClientSecret { get; set; } = string.Empty;
+    }
 }
+

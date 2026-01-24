@@ -29,7 +29,7 @@ namespace ShoeStore.Services
             var completedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId && o.OrderStatus!.Code == "delivered");
             var pendingOrders = await _context.Orders
-                .CountAsync(o => o.UserId == userId && 
+                .CountAsync(o => o.UserId == userId &&
                     (o.OrderStatus!.Code == "pending" || o.OrderStatus!.Code == "processing"));
 
             return new UserProfileDto
@@ -98,7 +98,7 @@ namespace ShoeStore.Services
             var completedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId && o.OrderStatus!.Code == "delivered");
             var pendingOrders = await _context.Orders
-                .CountAsync(o => o.UserId == userId && 
+                .CountAsync(o => o.UserId == userId &&
                     (o.OrderStatus!.Code == "pending" || o.OrderStatus!.Code == "processing"));
             var totalSpent = await _context.Orders
                 .Where(o => o.UserId == userId && o.OrderStatus!.Code == "delivered")

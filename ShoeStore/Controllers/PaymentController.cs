@@ -23,17 +23,14 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreatePaymentIntent([FromBody] long amount)
+        public async Task<ActionResult<CreatePaymentIntentResponseDto>> CreatePaymentIntent([FromBody] CreatePaymentIntentRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var paymentIntent = await _paymentService.CreatePaymentIntent(amount);
-            return Ok(new { clientSecret = paymentIntent.ClientSecret });
+            var intent = await _paymentService.CreatePaymentIntent(request);
+            return Ok(intent);
         }
 
 
@@ -76,12 +73,12 @@ namespace ShoeStore.Controllers
             var refundResult = await _paymentService.RefundPayment(orderId);
             if (refundResult == null)
                 return NotFound(new { message = "Payment intent not found or could not be refunded." });
-            
+
             if (refundResult == false)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to refund." });
             }
-            
+
             return Ok(new { message = "Payment refunded successfully." });
         }
     }

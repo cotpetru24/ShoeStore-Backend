@@ -26,9 +26,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
@@ -83,9 +80,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateShippingAddress([FromBody] CreateAddressRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
@@ -137,9 +131,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateShippingAddress(int addressId, [FromBody] AddressDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
@@ -177,9 +168,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateBillingAddress([FromBody] CreateAddressRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
@@ -233,9 +221,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CancelOrder(int orderId)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });

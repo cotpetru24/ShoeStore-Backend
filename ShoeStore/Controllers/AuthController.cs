@@ -24,9 +24,9 @@ namespace ShoeStore.Controllers
         public async Task<IActionResult> LoginAsync(LoginRequestDto request)
         {
             var token = await _service.LoginAsync(request);
-            if (token == null) 
+            if (token == null)
                 return Unauthorized(new { message = "Invalid credentials" });
-            
+
             return Ok(new { token });
         }
 
@@ -39,7 +39,7 @@ namespace ShoeStore.Controllers
         public async Task<IActionResult> RegisterAsync(RegisterRequestDto request)
         {
             var token = await _service.RegisterAsync(request);
-            if (token == null) 
+            if (token == null)
                 return BadRequest(new { message = "Failed to create user." });
 
             return Ok(new { token });

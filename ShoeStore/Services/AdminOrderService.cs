@@ -231,7 +231,7 @@ namespace ShoeStore.Services
             var userDetail = await _context.UserDetails
                 .FirstOrDefaultAsync(ud => ud.AspNetUserId == order.UserId);
 
-            var response =  new AdminOrderDto
+            var response = new AdminOrderDto
             {
                 Id = order.Id,
                 UserId = order.UserId!,
@@ -279,7 +279,7 @@ namespace ShoeStore.Services
 
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
-                Payment =new AdminPaymentDto
+                Payment = new AdminPaymentDto
                 {
                     Id = order.Payment.Id,
                     PaymentStatus = order.Payment.PaymentStatus.DisplayName,
@@ -339,9 +339,9 @@ namespace ShoeStore.Services
                 order.UpdatedAt = DateTime.UtcNow;
 
                 if (!string.IsNullOrEmpty(request.Notes))
-            {
-                order.Notes = $"{order.Notes}. Note added on {DateTime.UtcNow.ToString()} => {request.Notes}";
-            }
+                {
+                    order.Notes = $"{order.Notes}. Note added on {DateTime.UtcNow.ToString()} => {request.Notes}";
+                }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

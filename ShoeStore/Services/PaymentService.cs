@@ -14,12 +14,12 @@ namespace ShoeStore.Services
             _dbContext = dbContext;
         }
 
-        public async Task<PaymentIntent> CreatePaymentIntent(long amount)
+        public async Task<CreatePaymentIntentResponseDto> CreatePaymentIntent(CreatePaymentIntentRequestDto request)
         {
             var service = new PaymentIntentService();
             var options = new PaymentIntentCreateOptions
             {
-                Amount = amount,
+                Amount = request.Amount,
                 Currency = "gbp",
                 AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                 {
@@ -27,7 +27,14 @@ namespace ShoeStore.Services
                 }
             };
 
-            return await service.CreateAsync(options);
+           var response = await service.CreateAsync(options);
+
+            var intent = new CreatePaymentIntentResponseDto()
+            {
+                ClientSecret = response.ClientSecret,
+            };
+
+            return intent;
         }
 
         public async Task<PaymentIntent> StorePaymentDetails(StorePaymentDto storePaymentDto, string userId, string userEmail)

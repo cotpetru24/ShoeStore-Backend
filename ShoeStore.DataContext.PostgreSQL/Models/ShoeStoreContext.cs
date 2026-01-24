@@ -170,7 +170,7 @@ public partial class ShoeStoreContext : IdentityDbContext<IdentityUser, Identity
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.ProductName).HasColumnName("product_name");

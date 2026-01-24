@@ -12,7 +12,7 @@ namespace ShoeStore.Dto.Order
         public string Barcode { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? MainImage { get; set; }
-        public string? BrandName {get; set; }
+        public string? BrandName { get; set; }
     }
 }
 
