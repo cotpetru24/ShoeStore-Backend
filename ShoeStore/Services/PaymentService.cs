@@ -53,21 +53,19 @@ namespace ShoeStore.Services
             var paymentMethod = paymentIntent.PaymentMethod;
 
             // Map Stripe type to your DB PaymentMethod.Id
-            int? paymentMethodId = null;
-            if (paymentMethod?.Type == "card")
+            var paymentMethodCode = paymentMethod?.Type switch
             {
-                paymentMethodId = _dbContext.PaymentMethods
-                    .Where(pm => pm.Code == "card")
-                    .Select(pm => pm.Id)
-                    .FirstOrDefault();
-            }
-            else if (paymentMethod?.Type == "paypal")
-            {
-                paymentMethodId = _dbContext.PaymentMethods
-                    .Where(pm => pm.Code == "paypal")
-                    .Select(pm => pm.Id)
-                    .FirstOrDefault();
-            }
+                "card" => "card",
+                "paypal" => "paypal",
+                _ => throw new InvalidOperationException(
+                    $"Unsupported payment method type: {paymentMethod?.Type}")
+            };
+
+            var paymentMethodId = _dbContext.PaymentMethods
+                .Where(pm => pm.Code == paymentMethodCode)
+                .Select(pm => pm.Id)
+                .Single();
+
             // add more mappings if needed
 
             var latestCharge = paymentIntent.LatestCharge as Charge;
@@ -89,21 +87,17 @@ namespace ShoeStore.Services
 
             var paymentToStore = new Payment()
             {
-                OrderId = storePaymentDto.OrderId,
                 PaymentIntentId = paymentIntent.Id,
                 Amount = paymentIntent.Amount / 100m,
                 Currency = paymentIntent.Currency,
                 TransactionId = paymentIntent.Id,
-                PaymentStatusId = statusId,
+                PaymentStatus = statusId,
                 PaymentMethodId = paymentMethodId,
                 ProcessedAt = DateTime.Now,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
-                CustomerId = paymentIntent.CustomerId,
                 CardBrand = paymentMethod?.Card?.Brand,
                 CardLast4 = paymentMethod?.Card?.Last4,
-                BillingName = $"{userDetails?.FirstName} {userDetails?.LastName}",
-                BillingEmail = userEmail,
                 ReceiptUrl = latestCharge?.ReceiptUrl
             };
 
@@ -113,13 +107,13 @@ namespace ShoeStore.Services
             return paymentIntent;
         }
 
-        public async Task<bool?> RefundPayment(int orderId)
+        public async Task<bool?> RefundPayment(int paymentId)
         {
-            var existingPayment = _dbContext.Payments.FirstOrDefault(p => p.OrderId == orderId && p.PaymentStatusId == 3);
+            var existingPayment = _dbContext.Payments.FirstOrDefault(p => p.Id == paymentId);
 
             if (existingPayment == null) return null;
 
-            existingPayment.PaymentStatusId = 6;
+            existingPayment.PaymentStatus = 6;
             existingPayment.UpdatedAt = DateTime.Now;
 
             await _dbContext.SaveChangesAsync();

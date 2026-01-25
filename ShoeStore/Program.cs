@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Configuration;
+using ShoeStore.DataContext.PostgreSQL;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Services;
 using Stripe;
@@ -32,13 +33,21 @@ namespace ShoeStore
                 : Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
                     ?? builder.Configuration.GetConnectionString("ShoeStoreConnection");
 
-            if (!string.IsNullOrEmpty(connectionString))
+            if (string.IsNullOrEmpty(connectionString))
             {
-                builder.Services.AddDbContext<ShoeStoreContext>(options =>
-                {
-                    options.UseNpgsql(connectionString);
-                });
+                throw new InvalidOperationException("Hey George, ffs,  the db connection stint is missing !!!!!");
             }
+
+            builder.Services.AddDbContext<ShoeStoreContext>(options =>
+            {
+                options.UseNpgsql(connectionString);
+            });
+
+            builder.Services.AddDbContext<IdentityContext>(options =>
+            {
+                options.UseNpgsql(connectionString);
+            });
+
 
             // Register health checks only if connection string is available
             var healthCheckConnStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
@@ -63,7 +72,7 @@ namespace ShoeStore
             builder.Services.AddScoped<CmsService, CmsService>();
 
             builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-                .AddEntityFrameworkStores<ShoeStoreContext>()
+                .AddEntityFrameworkStores<IdentityContext>()
                 .AddDefaultTokenProviders();
 
             builder.Services.AddAuthentication(options =>

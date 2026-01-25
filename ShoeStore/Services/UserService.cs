@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.User;
 
 namespace ShoeStore.Services
@@ -27,10 +28,11 @@ namespace ShoeStore.Services
             // Get user statistics
             var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
             var completedOrders = await _context.Orders
-                .CountAsync(o => o.UserId == userId && o.OrderStatus!.Code == "delivered");
+                .CountAsync(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
             var pendingOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId &&
-                    (o.OrderStatus!.Code == "pending" || o.OrderStatus!.Code == "processing"));
+                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.PendingPayment ||
+                    (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing));
 
             return new UserProfileDto
             {
@@ -96,12 +98,13 @@ namespace ShoeStore.Services
         {
             var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
             var completedOrders = await _context.Orders
-                .CountAsync(o => o.UserId == userId && o.OrderStatus!.Code == "delivered");
+                .CountAsync(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
             var pendingOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId &&
-                    (o.OrderStatus!.Code == "pending" || o.OrderStatus!.Code == "processing"));
+                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.PendingPayment ||
+                    (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing));
             var totalSpent = await _context.Orders
-                .Where(o => o.UserId == userId && o.OrderStatus!.Code == "delivered")
+                .Where(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
                 .SumAsync(o => o.Total);
 
             return new UserStatsDto

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using ShoeStore.DataContext.PostgreSQL;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
@@ -10,6 +11,7 @@ namespace ShoeStore.Services
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ShoeStoreContext _context;
+        private readonly IdentityContext _identityContext;
 
         public AdminUserService(
             UserManager<IdentityUser> userManager,
@@ -52,8 +54,8 @@ namespace ShoeStore.Services
 
                 query =
                     from d in query
-                    join ur in _context.UserRoles on d.AspNetUser.Id equals ur.UserId
-                    join r in _context.Roles on ur.RoleId equals r.Id
+                    join ur in _identityContext.UserRoles on d.AspNetUser.Id equals ur.UserId
+                    join r in _identityContext.Roles on ur.RoleId equals r.Id
                     where r.Name == roleName
                     select d;
             }
@@ -100,7 +102,8 @@ namespace ShoeStore.Services
             // Get user details and roles for each user
             foreach (var user in users)
             {
-                var identityUser = user.AspNetUser;
+                //var identityUser = user.AspNetUser;
+                var identityUser = await _userManager.FindByIdAsync(user.AspNetUserId);
                 var userRoles = await _userManager.GetRolesAsync(identityUser);
 
                 // Get user statistics
@@ -111,7 +114,7 @@ namespace ShoeStore.Services
 
                 var totalOrders = userOrders.Count;
                 var totalSpent = userOrders
-                    .Where(o => o.OrderStatus?.Code == "delivered")
+                    .Where(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
                     .Sum(o => o.Total);
 
                 adminUsers.Add(new AdminUserDto
@@ -175,7 +178,7 @@ namespace ShoeStore.Services
 
             var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
             var totalSpent = await _context.Orders
-                .Where(o => o.UserId == userId && o.OrderStatus!.Code == "delivered")
+                .Where(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
                 .SumAsync(o => o.Total);
 
             return new AdminUserDto
@@ -326,7 +329,7 @@ namespace ShoeStore.Services
             // Apply filters
             if (!string.IsNullOrEmpty(request.StatusFilter))
             {
-                query = query.Where(o => o.OrderStatus!.Code == request.StatusFilter);
+                query = query.Where(o => ((OrderStatusEnum)o.OrderStatus).ToString() == request.StatusFilter);
             }
 
             if (request.FromDate.HasValue)
@@ -363,9 +366,9 @@ namespace ShoeStore.Services
                 {
                     Id = oi.Id,
                     ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductName ?? "Unknown Product",
+                    ProductName = oi.ProductSize.Product.Name,
                     Quantity = oi.Quantity,
-                    ProductPrice = oi.ProductPrice,
+                    ProductPrice = oi.UnitPrice,
                     BrandName = oi.ProductSize.Product?.Brand?.Name
                 }).ToList();
 
@@ -373,7 +376,7 @@ namespace ShoeStore.Services
                 {
                     Id = order.Payment.Id,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
-                    PaymentStatus = order.Payment.PaymentStatus.DisplayName,
+                    PaymentStatus = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString(),
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt
@@ -385,8 +388,8 @@ namespace ShoeStore.Services
                     UserId = order.UserId!,
                     UserEmail = user?.Email ?? "",
                     UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                    OrderStatusName = order.OrderStatus?.DisplayName,
-                    OrderStatusCode = order.OrderStatus?.Code,
+                    OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
+                    OrderStatusCode = order.OrderStatus.ToString(),
                     Subtotal = order.Subtotal,
                     ShippingCost = order.ShippingCost,
                     Discount = order.Discount,
@@ -399,7 +402,6 @@ namespace ShoeStore.Services
                         Id = order.ShippingAddress.Id,
                         AddressLine1 = order.ShippingAddress.AddressLine1,
                         City = order.ShippingAddress.City,
-                        County = order.ShippingAddress.County,
                         Postcode = order.ShippingAddress.Postcode,
                         Country = order.ShippingAddress.Country,
                     } : null,
@@ -408,7 +410,6 @@ namespace ShoeStore.Services
                         Id = order.BillingAddress.Id,
                         AddressLine1 = order.BillingAddress.AddressLine1,
                         City = order.BillingAddress.City,
-                        County = order.BillingAddress.County,
                         Postcode = order.BillingAddress.Postcode,
                         Country = order.BillingAddress.Country,
                     } : null,

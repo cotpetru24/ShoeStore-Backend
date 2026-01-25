@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
+using Stripe.Climate;
+using Order = ShoeStore.DataContext.PostgreSQL.Models.Order;
 
 namespace ShoeStore.Services
 {
@@ -56,7 +58,7 @@ namespace ShoeStore.Services
 
             if (!string.IsNullOrEmpty(request.StatusFilter))
             {
-                query = query.Where(o => o.OrderStatus!.Code == request.StatusFilter);
+                query = query.Where(o => ((OrderStatusEnum)o.OrderStatus).ToString() == request.StatusFilter);
             }
 
             if (request.FromDate.HasValue)
@@ -119,16 +121,18 @@ namespace ShoeStore.Services
                 {
                     Id = oi.Id,
                     ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductName ?? "Unknown Product",
+                    ProductName = oi.ProductSize.Product.Name,
                     Quantity = oi.Quantity,
-                    ProductPrice = oi.ProductPrice,
+                    ProductPrice = oi.UnitPrice,
                 }).ToList();
 
                 var payment = new AdminPaymentDto
                 {
                     Id = order.Payment.Id,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
-                    PaymentStatus = order.Payment.PaymentStatus.DisplayName,
+                    PaymentStatus = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString(),
+
+
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt
@@ -140,8 +144,8 @@ namespace ShoeStore.Services
                     UserId = order.UserId!,
                     UserEmail = user?.Email ?? "",
                     UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                    OrderStatusName = order.OrderStatus?.DisplayName,
-                    OrderStatusCode = order.OrderStatus?.Code,
+                    OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
+                    OrderStatusCode = order.OrderStatus.ToString(),
                     Subtotal = order.Subtotal,
                     ShippingCost = order.ShippingCost,
                     Discount = order.Discount,
@@ -154,7 +158,6 @@ namespace ShoeStore.Services
                         Id = order.ShippingAddress.Id,
                         AddressLine1 = order.ShippingAddress.AddressLine1,
                         City = order.ShippingAddress.City,
-                        County = order.ShippingAddress.County,
                         Postcode = order.ShippingAddress.Postcode,
                         Country = order.ShippingAddress.Country,
                     } : null,
@@ -163,7 +166,6 @@ namespace ShoeStore.Services
                         Id = order.BillingAddress.Id,
                         AddressLine1 = order.BillingAddress.AddressLine1,
                         City = order.BillingAddress.City,
-                        County = order.BillingAddress.County,
                         Postcode = order.BillingAddress.Postcode,
                         Country = order.BillingAddress.Country,
                     } : null,
@@ -174,13 +176,13 @@ namespace ShoeStore.Services
 
             var totalOrdersCount = await _context.Orders.CountAsync();
             var totalPendingOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus!.Id == 1)
+                .Where(o => o.OrderStatus == 1)
                 .CountAsync();
             var totalProcessingOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus!.Id == 2)
+                .Where(o => o.OrderStatus == 2)
                 .CountAsync();
             var totalDeliveredOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus!.Id == 4)
+                .Where(o => o.OrderStatus == 4)
                 .CountAsync();
 
             var stats = new AdminOrdersStatsDto()
@@ -237,8 +239,8 @@ namespace ShoeStore.Services
                 UserId = order.UserId!,
                 UserEmail = user?.Email ?? "",
                 UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                OrderStatusName = order.OrderStatus.DisplayName,
-                OrderStatusCode = order.OrderStatus.Code,
+                OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
+                OrderStatusCode = (order.OrderStatus).ToString(),
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
@@ -251,7 +253,6 @@ namespace ShoeStore.Services
                     Id = order.ShippingAddress.Id,
                     AddressLine1 = order.ShippingAddress.AddressLine1,
                     City = order.ShippingAddress.City,
-                    County = order.ShippingAddress.County,
                     Postcode = order.ShippingAddress.Postcode,
                     Country = order.ShippingAddress.Country,
                 } : null,
@@ -260,7 +261,6 @@ namespace ShoeStore.Services
                     Id = order.BillingAddress.Id,
                     AddressLine1 = order.BillingAddress.AddressLine1,
                     City = order.BillingAddress.City,
-                    County = order.BillingAddress.County,
                     Postcode = order.BillingAddress.Postcode,
                     Country = order.BillingAddress.Country,
                 } : null,
@@ -268,9 +268,9 @@ namespace ShoeStore.Services
                 {
                     Id = oi.Id,
                     ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductName ?? "Unknown Product",
+                    ProductName = oi.ProductSize.Product.Name,
                     Quantity = oi.Quantity,
-                    ProductPrice = oi.ProductPrice,
+                    ProductPrice = oi.UnitPrice,
                     BrandName = oi.ProductSize.Product.Brand.Name,
                     Barcode = oi.ProductSize.Barcode,
                     MainImage = oi.ProductSize.Product.ProductImages
@@ -282,15 +282,13 @@ namespace ShoeStore.Services
                 Payment = new AdminPaymentDto
                 {
                     Id = order.Payment.Id,
-                    PaymentStatus = order.Payment.PaymentStatus.DisplayName,
+                    PaymentStatus = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString(),
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt,
                     Currency = order.Payment.Currency,
                     CardBrand = order.Payment.CardBrand,
                     CardLast4 = order.Payment.CardLast4,
-                    BillingName = order.Payment.BillingName,
-                    BillingEmail = order.Payment.BillingEmail,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
                     ReceiptUrl = order.Payment.ReceiptUrl
                 }
@@ -312,7 +310,7 @@ namespace ShoeStore.Services
                 if (order == null) return false;
 
                 // refunded orders cannot be amended
-                if (order.Payment.PaymentStatusId == (int)PaymentStatusEnum.Refunded &&
+                if (order.Payment.PaymentStatus == (int)PaymentStatusEnum.Refunded &&
                     request.OrderStatusId != (int)OrderStatusEnum.Cancelled &&
                     request.OrderStatusId != (int)OrderStatusEnum.Returned)
                 {
@@ -323,7 +321,7 @@ namespace ShoeStore.Services
 
                 // if cancelling => refund
                 if (request.OrderStatusId == (int)OrderStatusEnum.Cancelled &&
-                    order.Payment.PaymentStatusId != (int)PaymentStatusEnum.Refunded)
+                    order.Payment.PaymentStatus != (int)PaymentStatusEnum.Refunded)
                 {
                     var refundResult =
                         await _paymentService.RefundPayment(order.Id);
@@ -335,7 +333,7 @@ namespace ShoeStore.Services
                     }
                 }
 
-                order.OrderStatusId = request.OrderStatusId;
+                order.OrderStatus = request.OrderStatusId;
                 order.UpdatedAt = DateTime.UtcNow;
 
                 if (!string.IsNullOrEmpty(request.Notes))

@@ -36,9 +36,9 @@ namespace ShoeStore.Services
             var totalRevenueOrders = await _context.Orders
                 .Include(o => o.OrderStatus)
                 .Where(o => o.OrderStatus != null
-                && (o.OrderStatus.Code == "delivered"
-                || o.OrderStatus.Code == "processing"
-                || o.OrderStatus.Code == "shipped"))
+                && ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered
+                || (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing
+                || (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Shipped))
                 .ToListAsync();
             var totalRevenue = totalRevenueOrders.Sum(o => o.Total);
 
@@ -47,11 +47,11 @@ namespace ShoeStore.Services
                 .Include(o => o.OrderStatus)
                 .ToListAsync();
 
-            var pendingOrders = ordersWithStatus.Count(o => o.OrderStatus?.Code == "pending");
-            var processingOrders = ordersWithStatus.Count(o => o.OrderStatus?.Code == "processing");
-            var shippedOrders = ordersWithStatus.Count(o => o.OrderStatus?.Code == "shipped");
-            var deliveredOrdersCount = ordersWithStatus.Count(o => o.OrderStatus?.Code == "delivered");
-            var cancelledOrders = ordersWithStatus.Count(o => o.OrderStatus?.Code == "cancelled");
+            var pendingOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.PendingPayment );
+            var processingOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing);
+            var shippedOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Shipped );
+            var deliveredOrdersCount = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered );
+            var cancelledOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Cancelled );
 
             // Calculate today's revenue
             var todayRevenue = totalRevenueOrders

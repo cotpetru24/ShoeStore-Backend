@@ -59,8 +59,7 @@ namespace ShoeStore.Services
 
                     var orderItem = new OrderItem
                     {
-                        ProductName = product.Name,
-                        ProductPrice = product.Price,
+                        UnitPrice = product.Price,
                         Quantity = item.Quantity,
                         CreatedAt = DateTime.UtcNow,
 
@@ -76,7 +75,7 @@ namespace ShoeStore.Services
                 }
 
                 // Validate shipping address
-                var shippingAddress = await _context.ShippingAddresses
+                var shippingAddress = await _context.UserAddresses
                     .FirstOrDefaultAsync(a =>
                         a.Id == request.ShippingAddressId &&
                         a.UserId == userId);
@@ -85,15 +84,14 @@ namespace ShoeStore.Services
                     throw new ArgumentException("Invalid shipping address");
 
                 // Billing address
-                BillingAddress billingAddress;
+                UserAddress billingAddress;
 
                 if (request.BillingAddressSameAsShipping)
                 {
-                    billingAddress = new BillingAddress
+                    billingAddress = new UserAddress
                     {
                         AddressLine1 = shippingAddress.AddressLine1,
                         City = shippingAddress.City,
-                        County = shippingAddress.County,
                         Country = shippingAddress.Country,
                         Postcode = shippingAddress.Postcode,
                         UserId = userId
@@ -101,32 +99,26 @@ namespace ShoeStore.Services
                 }
                 else
                 {
-                    billingAddress = new BillingAddress
+                    billingAddress = new UserAddress
                     {
                         AddressLine1 = request.BillingAddressRequest.AddressLine1,
                         City = request.BillingAddressRequest.City,
-                        County = request.BillingAddressRequest.County,
                         Country = request.BillingAddressRequest.Country,
                         Postcode = request.BillingAddressRequest.Postcode,
                         UserId = userId
                     };
                 }
 
-                _context.BillingAddresses.Add(billingAddress);
+                _context.UserAddresses.Add(billingAddress);
                 await _context.SaveChangesAsync();
 
-                var orderStatus = await _context.OrderStatuses
-                    .FirstOrDefaultAsync(s => s.Code == "processing");
-
-                if (orderStatus == null)
-                    throw new InvalidOperationException("Default order status not found");
 
                 var total = subtotal + request.ShippingCost - request.Discount;
 
                 var order = new DataContext.PostgreSQL.Models.Order
                 {
                     UserId = userId,
-                    OrderStatusId = orderStatus.Id,
+                    OrderStatus = (int)OrderStatusEnum.Processing,
                     Subtotal = subtotal,
                     ShippingCost = request.ShippingCost,
                     Discount = request.Discount,
@@ -200,8 +192,8 @@ namespace ShoeStore.Services
             {
                 Id = order.Id,
                 UserId = order.UserId!,
-                OrderStatusId = order.OrderStatusId,
-                OrderStatusName = order.OrderStatus.DisplayName,
+                OrderStatusId = order.OrderStatus,
+                OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
@@ -216,7 +208,6 @@ namespace ShoeStore.Services
                     UserId = order.ShippingAddress.UserId,
                     AddressLine1 = order.ShippingAddress.AddressLine1,
                     City = order.ShippingAddress.City,
-                    County = order.ShippingAddress.County,
                     Postcode = order.ShippingAddress.Postcode,
                     Country = order.ShippingAddress.Country,
                 },
@@ -227,7 +218,6 @@ namespace ShoeStore.Services
                     UserId = order.BillingAddress.UserId,
                     AddressLine1 = order.BillingAddress.AddressLine1,
                     City = order.BillingAddress.City,
-                    County = order.BillingAddress.County,
                     Postcode = order.BillingAddress.Postcode,
                     Country = order.BillingAddress.Country,
                 },
@@ -238,9 +228,8 @@ namespace ShoeStore.Services
                     OrderId = order.Id,
                     CreatedAt = oi.CreatedAt,
                     ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductName,
                     Quantity = oi.Quantity,
-                    ProductPrice = oi.ProductPrice,
+                    ProductPrice = oi.UnitPrice,
                     BrandName = oi.ProductSize.Product.Brand.Name,
                     Barcode = oi.ProductSize.Barcode,
                     MainImage = oi.ProductSize.Product.ProductImages
@@ -256,12 +245,10 @@ namespace ShoeStore.Services
                     Currency = order.Payment.Currency,
                     CardBrand = order.Payment.CardBrand,
                     CardLast4 = order.Payment.CardLast4,
-                    BillingName = order.Payment.BillingName,
-                    BillingEmail = order.Payment.BillingEmail,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
                     ReceiptUrl = order.Payment.ReceiptUrl,
                     OrderId = order.Id,
-                    Status = order.Payment.PaymentStatus.DisplayName
+                    Status = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString()
                 }
             };
 
@@ -305,7 +292,7 @@ namespace ShoeStore.Services
             // Apply filters
             if (!string.IsNullOrEmpty(request.OrderStatus))
             {
-                query = query.Where(o => o.OrderStatus != null && o.OrderStatus.Code == request.OrderStatus);
+                query = query.Where(o => o.OrderStatus != null && ((OrderStatusEnum)o.OrderStatus).ToString() == request.OrderStatus);
             }
 
             if (request.FromDate.HasValue)
@@ -335,8 +322,8 @@ namespace ShoeStore.Services
             {
                 Id = order.Id,
                 UserId = order.UserId,
-                OrderStatusId = order.OrderStatusId,
-                OrderStatusName = order.OrderStatus.DisplayName,
+                OrderStatusId = order.OrderStatus,
+                OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
@@ -353,7 +340,6 @@ namespace ShoeStore.Services
                             UserId = order.ShippingAddress.UserId,
                             AddressLine1 = order.ShippingAddress.AddressLine1,
                             City = order.ShippingAddress.City,
-                            County = order.ShippingAddress.County,
                             Postcode = order.ShippingAddress.Postcode,
                             Country = order.ShippingAddress.Country
                         },
@@ -366,7 +352,6 @@ namespace ShoeStore.Services
                             UserId = order.BillingAddress.UserId,
                             AddressLine1 = order.BillingAddress.AddressLine1,
                             City = order.BillingAddress.City,
-                            County = order.BillingAddress.County,
                             Postcode = order.BillingAddress.Postcode,
                             Country = order.BillingAddress.Country
                         },
@@ -375,9 +360,9 @@ namespace ShoeStore.Services
                 {
                     Id = oi.Id,
                     ProductId = oi.ProductSize.ProductId,
-                    ProductName = oi.ProductName ?? "Unknown Product",
+                    ProductName = oi.ProductSize.Product.Name,
                     Quantity = oi.Quantity,
-                    ProductPrice = oi.ProductPrice,
+                    ProductPrice = oi.UnitPrice,
                     BrandName = oi.ProductSize.Product.Brand.Name,
                     Barcode = oi.ProductSize.Barcode,
                     MainImage = oi.ProductSize.Product.ProductImages
@@ -390,14 +375,12 @@ namespace ShoeStore.Services
                 Payment = new PaymentDto
                 {
                     OrderId = order.Id,
-                    BillingEmail = order.Payment.BillingEmail,
-                    BillingName = order.Payment.BillingName,
                     CardBrand = order.Payment.CardBrand,
                     CardLast4 = order.Payment.CardLast4,
                     Currency = order.Payment.Currency,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
                     ReceiptUrl = order.Payment.ReceiptUrl,
-                    Status = order.Payment.PaymentStatus.DisplayName,
+                    Status = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString()
                 }
             }).ToList();
 
@@ -419,17 +402,16 @@ namespace ShoeStore.Services
         // Shipping Address Methods
         public async Task<CreateAddressResponseDto> CreateShippingAddressAsync(CreateAddressRequestDto request, string userId)
         {
-            var newAddress = new ShippingAddress
+            var newAddress = new UserAddress
             {
                 UserId = userId,
                 AddressLine1 = request.AddressLine1,
                 City = request.City,
-                County = request.County,
                 Postcode = request.Postcode,
                 Country = request.Country
             };
 
-            _context.ShippingAddresses.Add(newAddress);
+            _context.UserAddresses.Add(newAddress);
             await _context.SaveChangesAsync();
 
             return new CreateAddressResponseDto
@@ -442,7 +424,7 @@ namespace ShoeStore.Services
 
         public async Task<List<AddressDto>> GetShippingAddressesAsync(string userId)
         {
-            var addresses = await _context.ShippingAddresses
+            var addresses = await _context.UserAddresses
                 .Where(a => a.UserId == userId)
                 .ToListAsync();
 
@@ -452,7 +434,6 @@ namespace ShoeStore.Services
                 UserId = a.UserId,
                 AddressLine1 = a.AddressLine1,
                 City = a.City,
-                County = a.County,
                 Postcode = a.Postcode,
                 Country = a.Country
             }).ToList();
@@ -460,7 +441,7 @@ namespace ShoeStore.Services
 
         public async Task<AddressDto?> GetShippingAddressByIdAsync(int addressId, string userId)
         {
-            var address = await _context.ShippingAddresses
+            var address = await _context.UserAddresses
                 .Where(a => a.Id == addressId && a.UserId == userId)
                 .FirstOrDefaultAsync();
 
@@ -473,7 +454,6 @@ namespace ShoeStore.Services
                 UserId = address.UserId,
                 AddressLine1 = address.AddressLine1,
                 City = address.City,
-                County = address.County,
                 Postcode = address.Postcode,
                 Country = address.Country
             };
@@ -481,7 +461,7 @@ namespace ShoeStore.Services
 
         public async Task<CreateAddressResponseDto> UpdateShippingAddressAsync(int addressId, AddressDto request, string userId)
         {
-            var address = await _context.ShippingAddresses
+            var address = await _context.UserAddresses
                 .Where(a => a.Id == addressId && a.UserId == userId)
                 .FirstOrDefaultAsync();
 
@@ -490,7 +470,6 @@ namespace ShoeStore.Services
 
             address.AddressLine1 = request.AddressLine1;
             address.City = request.City;
-            address.County = request.County;
             address.Postcode = request.Postcode;
             address.Country = request.Country;
 
@@ -506,7 +485,7 @@ namespace ShoeStore.Services
 
         public async Task<bool> DeleteShippingAddressAsync(int addressId, string userId)
         {
-            var address = await _context.ShippingAddresses
+            var address = await _context.UserAddresses
                 .Where(a => a.Id == addressId && a.UserId == userId)
                 .FirstOrDefaultAsync();
 
@@ -520,7 +499,7 @@ namespace ShoeStore.Services
             if (isUsedInOrders)
                 throw new InvalidOperationException("Cannot delete address that is being used in orders");
 
-            _context.ShippingAddresses.Remove(address);
+            _context.UserAddresses.Remove(address);
             await _context.SaveChangesAsync();
 
             return true;
@@ -529,17 +508,16 @@ namespace ShoeStore.Services
         // Billing Address Methods
         public async Task<CreateAddressResponseDto> CreateBillingAddressAsync(CreateAddressRequestDto request, string userId)
         {
-            var newAddress = new BillingAddress
+            var newAddress = new UserAddress
             {
                 UserId = userId,
                 AddressLine1 = request.AddressLine1,
                 City = request.City,
-                County = request.County,
                 Postcode = request.Postcode,
                 Country = request.Country
             };
 
-            _context.BillingAddresses.Add(newAddress);
+            _context.UserAddresses.Add(newAddress);
             await _context.SaveChangesAsync();
 
             return new CreateAddressResponseDto
@@ -552,7 +530,7 @@ namespace ShoeStore.Services
 
         public async Task<List<AddressDto>> GetBillingAddressesAsync(int id)
         {
-            var addresses = await _context.BillingAddresses
+            var addresses = await _context.UserAddresses
                 .Where(a => a.Id == id)
                 .ToListAsync();
 
@@ -562,7 +540,6 @@ namespace ShoeStore.Services
                 UserId = a.UserId,
                 AddressLine1 = a.AddressLine1,
                 City = a.City,
-                County = a.County,
                 Postcode = a.Postcode,
                 Country = a.Country
             }).ToList();
@@ -570,7 +547,7 @@ namespace ShoeStore.Services
 
         public async Task<AddressDto?> GetBillingAddressByIdAsync(int addressId, string userId)
         {
-            var address = await _context.BillingAddresses
+            var address = await _context.UserAddresses
                 .Where(a => a.Id == addressId)
                 .FirstOrDefaultAsync();
 
@@ -583,7 +560,6 @@ namespace ShoeStore.Services
                 UserId = address.UserId,
                 AddressLine1 = address.AddressLine1,
                 City = address.City,
-                County = address.County,
                 Postcode = address.Postcode,
                 Country = address.Country
             };
@@ -601,11 +577,11 @@ namespace ShoeStore.Services
                 .FirstOrDefaultAsync();
 
                 if (existingOrder == null
-                    || existingOrder.OrderStatusId == 5
-                    || existingOrder.OrderStatusId == 6
-                    || existingOrder.OrderStatusId == 7) return null;
+                    || existingOrder.OrderStatus == 5
+                    || existingOrder.OrderStatus == 6
+                    || existingOrder.OrderStatus == 7) return null;
 
-                existingOrder.OrderStatusId = 5;
+                existingOrder.OrderStatus = 5;
 
                 bool? refundResponse = await _paymentService.RefundPayment(orderId);
 

@@ -1,28 +1,45 @@
-﻿namespace ShoeStore.DataContext.PostgreSQL.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace ShoeStore.DataContext.PostgreSQL.Models;
 
 public partial class Product
 {
     public int Id { get; set; }
+
     public string Name { get; set; } = null!;
+
     public string? Description { get; set; }
+
     public decimal Price { get; set; }
+
     public decimal? OriginalPrice { get; set; }
-    public int? BrandId { get; set; }
-    public int? AudienceId { get; set; }
-    public decimal? Rating { get; set; }
-    public int? ReviewCount { get; set; }
-    public bool? IsNew { get; set; }
-    public int? DiscountPercentage { get; set; }
+
+    public int BrandId { get; set; }
+
+    public int AudienceId { get; set; }
+
+    public decimal Rating { get; set; }
+
+    public int ReviewCount { get; set; }
+
+    public bool IsNew { get; set; }
+
+    public int DiscountPercentage { get; set; }
+
     public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+
+    public DateTime UpdatedAt { get; set; }
+
     public bool IsActive { get; set; }
 
+    public virtual Audience Audience { get; set; } = null!;
+
+    public virtual Brand Brand { get; set; } = null!;
+
     public virtual ICollection<ProductFeature> ProductFeatures { get; set; } = new List<ProductFeature>();
-    public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+
     public virtual ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
+
     public virtual ICollection<ProductSize> ProductSizes { get; set; } = new List<ProductSize>();
-
-    public virtual Audience? Audience { get; set; }
-
-    public virtual Brand? Brand { get; set; }
 }
