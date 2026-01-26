@@ -8,6 +8,7 @@ using ShoeStore.Dto.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 
@@ -40,18 +41,30 @@ namespace ShoeStore.Services
         public async Task SeedAdminAccount()
         {
             if (!await _roleManager.RoleExistsAsync(_adminRole))
-            {
                 await _roleManager.CreateAsync(new IdentityRole(_adminRole));
+
+            if (!await _roleManager.RoleExistsAsync(_customerRole))
                 await _roleManager.CreateAsync(new IdentityRole(_customerRole));
 
+            var adminEmail = _configuration["AdminAccount:Email"];
+            var adminUser = await _userManager.FindByEmailAsync(adminEmail);
+
+            if (adminUser == null)
+            {
                 IdentityUser user = new IdentityUser()
                 {
                     UserName = _configuration["AdminAccount:Email"],
                     Email = _configuration["AdminAccount:Email"],
                     EmailConfirmed = true
                 };
+                var result = await _userManager.CreateAsync(user, _configuration["AdminAccount:Password"]);
+                if (!result.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        string.Join("; ", result.Errors.Select(e => e.Description))
+                    );
+                }
 
-                IdentityResult result = await _userManager.CreateAsync(user, _configuration["AdminAccount:Password"]);
 
                 await _userManager.AddToRoleAsync(user, _adminRole);
 
@@ -85,7 +98,7 @@ namespace ShoeStore.Services
         }
 
 
-        public async Task<string?> RegisterAsync(RegisterRequestDto request)
+        public async Task<string> RegisterAsync(RegisterRequestDto request)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null) throw new InvalidOperationException("User already exists.");
@@ -101,27 +114,11 @@ namespace ShoeStore.Services
             if (!result.Succeeded)
             {
                 var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Failed to create user: {errors}");
+                throw new InvalidOperationException($"Failed to create user: {errors}");
             }
 
-            if (!string.IsNullOrEmpty(request.Role))
-            {
-                if (!await _roleManager.RoleExistsAsync(request.Role))
-                {
-                    var roleResult = await _roleManager.CreateAsync(new IdentityRole(request.Role));
-                    if ((!roleResult.Succeeded))
-                    {
-                        var roleErrors = string.Join("; ", roleResult.Errors.Select(e => e.Description));
-                        throw new Exception($"Failed to create role : {roleErrors}");
-                    }
-                }
 
-                await _userManager.AddToRoleAsync(newUser, request.Role);
-            }
-            else
-            {
-                await _userManager.AddToRoleAsync(newUser, _customerRole);
-            }
+            await _userManager.AddToRoleAsync(newUser, _customerRole);
 
             UserDetail newUserDetails = new UserDetail()
             {

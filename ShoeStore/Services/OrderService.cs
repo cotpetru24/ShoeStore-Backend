@@ -396,176 +396,6 @@ namespace ShoeStore.Services
             };
         }
 
-
-
-
-        // Shipping Address Methods
-        public async Task<CreateAddressResponseDto> CreateShippingAddressAsync(CreateAddressRequestDto request, string userId)
-        {
-            var newAddress = new UserAddress
-            {
-                UserId = userId,
-                AddressLine1 = request.AddressLine1,
-                City = request.City,
-                Postcode = request.Postcode,
-                Country = request.Country
-            };
-
-            _context.UserAddresses.Add(newAddress);
-            await _context.SaveChangesAsync();
-
-            return new CreateAddressResponseDto
-            {
-                Id = newAddress.Id,
-                Message = "Shipping address created successfully",
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
-        public async Task<List<AddressDto>> GetShippingAddressesAsync(string userId)
-        {
-            var addresses = await _context.UserAddresses
-                .Where(a => a.UserId == userId)
-                .ToListAsync();
-
-            return addresses.Select(a => new AddressDto
-            {
-                Id = a.Id,
-                UserId = a.UserId,
-                AddressLine1 = a.AddressLine1,
-                City = a.City,
-                Postcode = a.Postcode,
-                Country = a.Country
-            }).ToList();
-        }
-
-        public async Task<AddressDto?> GetShippingAddressByIdAsync(int addressId, string userId)
-        {
-            var address = await _context.UserAddresses
-                .Where(a => a.Id == addressId && a.UserId == userId)
-                .FirstOrDefaultAsync();
-
-            if (address == null)
-                return null;
-
-            return new AddressDto
-            {
-                Id = address.Id,
-                UserId = address.UserId,
-                AddressLine1 = address.AddressLine1,
-                City = address.City,
-                Postcode = address.Postcode,
-                Country = address.Country
-            };
-        }
-
-        public async Task<CreateAddressResponseDto> UpdateShippingAddressAsync(int addressId, AddressDto request, string userId)
-        {
-            var address = await _context.UserAddresses
-                .Where(a => a.Id == addressId && a.UserId == userId)
-                .FirstOrDefaultAsync();
-
-            if (address == null)
-                throw new ArgumentException("Shipping address not found");
-
-            address.AddressLine1 = request.AddressLine1;
-            address.City = request.City;
-            address.Postcode = request.Postcode;
-            address.Country = request.Country;
-
-            await _context.SaveChangesAsync();
-
-            return new CreateAddressResponseDto
-            {
-                Id = address.Id,
-                Message = "Shipping address updated successfully",
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
-        public async Task<bool> DeleteShippingAddressAsync(int addressId, string userId)
-        {
-            var address = await _context.UserAddresses
-                .Where(a => a.Id == addressId && a.UserId == userId)
-                .FirstOrDefaultAsync();
-
-            if (address == null)
-                return false;
-
-            // Check if address is being used in any orders
-            var isUsedInOrders = await _context.Orders
-                .AnyAsync(o => o.ShippingAddressId == addressId || o.BillingAddressId == addressId);
-
-            if (isUsedInOrders)
-                throw new InvalidOperationException("Cannot delete address that is being used in orders");
-
-            _context.UserAddresses.Remove(address);
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
-
-        // Billing Address Methods
-        public async Task<CreateAddressResponseDto> CreateBillingAddressAsync(CreateAddressRequestDto request, string userId)
-        {
-            var newAddress = new UserAddress
-            {
-                UserId = userId,
-                AddressLine1 = request.AddressLine1,
-                City = request.City,
-                Postcode = request.Postcode,
-                Country = request.Country
-            };
-
-            _context.UserAddresses.Add(newAddress);
-            await _context.SaveChangesAsync();
-
-            return new CreateAddressResponseDto
-            {
-                Id = newAddress.Id,
-                Message = "Billing address created successfully",
-                CreatedAt = DateTime.UtcNow
-            };
-        }
-
-        public async Task<List<AddressDto>> GetBillingAddressesAsync(int id)
-        {
-            var addresses = await _context.UserAddresses
-                .Where(a => a.Id == id)
-                .ToListAsync();
-
-            return addresses.Select(a => new AddressDto
-            {
-                Id = a.Id,
-                UserId = a.UserId,
-                AddressLine1 = a.AddressLine1,
-                City = a.City,
-                Postcode = a.Postcode,
-                Country = a.Country
-            }).ToList();
-        }
-
-        public async Task<AddressDto?> GetBillingAddressByIdAsync(int addressId, string userId)
-        {
-            var address = await _context.UserAddresses
-                .Where(a => a.Id == addressId)
-                .FirstOrDefaultAsync();
-
-            if (address == null)
-                return null;
-
-            return new AddressDto
-            {
-                Id = address.Id,
-                UserId = address.UserId,
-                AddressLine1 = address.AddressLine1,
-                City = address.City,
-                Postcode = address.Postcode,
-                Country = address.Country
-            };
-        }
-
-
         public async Task<OrderDto?> CancelOrder(int orderId, string userId)
         {
             await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync();
@@ -602,5 +432,142 @@ namespace ShoeStore.Services
                 throw;
             }
         }
+
+
+        public async Task<PlaceOrderResponseDto> CreatePendingOrder(CreatePendingOrderRequestDto request,string userId)
+        {
+
+
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                decimal subtotal = 0;
+                var orderItems = new List<OrderItem>();
+
+                foreach (var item in request.OrderItems)
+                {
+                    var product = await _context.Products
+                        .Include(p => p.ProductSizes)
+                        .FirstOrDefaultAsync(p => p.Id == item.ProductId);
+
+                    if (product == null)
+                        throw new ArgumentException($"Product with ID {item.ProductId} not found");
+
+                    var productSize = product.ProductSizes
+                        .FirstOrDefault(s => s.Barcode == item.ProductSizeBarcode);
+
+                    if (productSize == null)
+                        throw new ArgumentException(
+                            $"Size {item.ProductSizeBarcode} not found for product {product.Name}");
+
+                    if (productSize.Stock < item.Quantity)
+                        throw new ArgumentException(
+                            $"Insufficient stock for product {product.Name}, size {item.ProductSizeBarcode}. " +
+                            $"Available: {productSize.Stock}, Requested: {item.Quantity}");
+
+                    // Reduce stock at SIZE level
+                    productSize.Stock -= item.Quantity;
+
+                    var orderItem = new OrderItem
+                    {
+                        UnitPrice = product.Price,
+                        Quantity = item.Quantity,
+                        CreatedAt = DateTime.UtcNow,
+
+
+
+
+                        //--------- amend the front end to send the ProductSizeId instead of Size -----------
+                        ProductSizeId = product.ProductSizes.First(ps => ps.Barcode == item.ProductSizeBarcode).Id
+                    };
+
+                    orderItems.Add(orderItem);
+                    subtotal += product.Price * item.Quantity;
+                }
+
+                // Validate shipping address
+                var shippingAddress = await _context.UserAddresses
+                    .FirstOrDefaultAsync(a =>
+                        a.Id == request.ShippingAddressId &&
+                        a.UserId == userId);
+
+                if (shippingAddress == null)
+                    throw new ArgumentException("Invalid shipping address");
+
+                // Billing address
+                UserAddress billingAddress;
+
+                if (request.BillingAddressSameAsShipping)
+                {
+                    billingAddress = new UserAddress
+                    {
+                        AddressLine1 = shippingAddress.AddressLine1,
+                        City = shippingAddress.City,
+                        Country = shippingAddress.Country,
+                        Postcode = shippingAddress.Postcode,
+                        UserId = userId
+                    };
+                }
+                else
+                {
+                    billingAddress = new UserAddress
+                    {
+                        AddressLine1 = request.BillingAddressRequest.AddressLine1,
+                        City = request.BillingAddressRequest.City,
+                        Country = request.BillingAddressRequest.Country,
+                        Postcode = request.BillingAddressRequest.Postcode,
+                        UserId = userId
+                    };
+                }
+
+                _context.UserAddresses.Add(billingAddress);
+                await _context.SaveChangesAsync();
+
+
+                var total = subtotal + request.ShippingCost - request.Discount;
+
+                var order = new DataContext.PostgreSQL.Models.Order
+                {
+                    UserId = userId,
+                    OrderStatus = (int)OrderStatusEnum.Processing,
+                    Subtotal = subtotal,
+                    ShippingCost = request.ShippingCost,
+                    Discount = request.Discount,
+                    Total = total,
+                    ShippingAddressId = shippingAddress.Id,
+                    BillingAddressId = billingAddress.Id,
+                    Notes = request.Notes,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync();
+
+                foreach (var item in orderItems)
+                    item.OrderId = order.Id;
+
+                _context.OrderItems.AddRange(orderItems);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return new PlaceOrderResponseDto
+                {
+                    OrderId = order.Id,
+                    Message = "Order placed successfully",
+                    Total = order.Total,
+                    CreatedAt = order.CreatedAt
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
     }
 }

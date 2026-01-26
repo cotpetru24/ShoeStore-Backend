@@ -32,17 +32,14 @@ namespace ShoeStore.Controllers
 
 
         [HttpPost("register")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> RegisterAsync(RegisterRequestDto request)
         {
             var token = await _service.RegisterAsync(request);
-            if (token == null)
-                return BadRequest(new { message = "Failed to create user." });
-
-            return Ok(new { token });
+            return Created(string.Empty, new { token });
         }
+
     }
 }

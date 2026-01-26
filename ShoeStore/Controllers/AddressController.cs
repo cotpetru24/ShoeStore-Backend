@@ -1,113 +1,111 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Dto.Order;
 using ShoeStore.Services;
-using System.Security.Claims;
+using Stripe.Climate;
 
 namespace ShoeStore.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class OrderController : ControllerBase
+    public class AddressController : ControllerBase
     {
-        private readonly OrderService _orderService;
 
-        public OrderController(OrderService orderService)
+        private readonly AddressService _addressService;
+        public AddressController(AddressService addressService)
         {
-            _orderService = orderService;
+            _addressService = addressService;
         }
 
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PlaceOrderResponseDto))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CreateAddressResponseDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequestDto request)
+        public async Task<IActionResult> CreateAddressAsync([FromBody] CreateAddressRequestDto request)
         {
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var result = await _orderService.PlaceOrderAsync(request, userId);
+            var result = await _addressService.CreateAddressAsync(request, userId);
             return Ok(result);
         }
 
 
-        [HttpGet("{orderId}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
+        [HttpGet("{addressId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AddressDto))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetOrder(int orderId)
+        public async Task<IActionResult> GetAddressByIdAsync(int addressId)
         {
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var order = await _orderService.GetOrderByIdAsync(orderId, userId);
-            if (order == null)
-                return NotFound(new { message = $"Order with ID {orderId} not found" });
+            var address = await _addressService.GetAddressByIdAsync(addressId, userId);
+            if (address == null)
+                return NotFound(new { message = $"Shipping address with ID {addressId} not found" });
 
-            return Ok(order);
+            return Ok(address);
         }
 
 
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetOrdersResponseDto))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AddressDto>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetOrders([FromQuery] GetOrdersRequestDto request)
+        public async Task<IActionResult> GetUserAddressesAsync()
         {
-            if (request.Page < 1) request.Page = 1;
-            if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var orders = await _orderService.GetOrdersAsync(request, userId);
-            return Ok(orders);
+            var addresses = await _addressService.GetUserAddressesAsync(userId);
+            return Ok(addresses);
         }
 
 
-        [HttpPut("cancel-order/{orderId}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
+        [HttpPut("{addressId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CreateAddressResponseDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CancelOrder(int orderId)
+        public async Task<IActionResult> UpdateAddressAsync(int addressId, [FromBody] AddressDto request)
         {
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var result = await _orderService.CancelOrder(orderId, userId);
-            if (result == null)
-                return NotFound(new { message = "Order not found or cannot be cancelled" });
-
+            var result = await _addressService.UpdateAddressAsync(request, userId);
             return Ok(result);
         }
 
 
-
-        [HttpPost("pending")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CreatePendingOrderResponseDto))]
+        [HttpDelete("{addressId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreatePendingOrder([FromBody] CreatePendingOrderRequestDto request)
+        public async Task<IActionResult> DeleteAddressAsync(int addressId)
         {
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
-            var result = await _orderService.CreatePendingOrder(request, userId);
-            return Ok(result);
+            var result = await _addressService.DeleteAddressAsync(addressId, userId);
+            if (!result)
+                return NotFound(new { message = $"Shipping address with ID {addressId} not found" });
+
+            return Ok(new { message = "Shipping address deleted successfully" });
         }
+
 
     }
 }
