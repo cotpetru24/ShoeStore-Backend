@@ -1,7 +1,10 @@
 using Microsoft.Extensions.Options;
+using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Payment;
 using Stripe;
-using ShoeStore.DataContext.PostgreSQL.Models;
+using Stripe.Forwarding;
+using Stripe.TestHelpers;
 
 namespace ShoeStore.Services
 {
@@ -27,7 +30,7 @@ namespace ShoeStore.Services
                 }
             };
 
-           var response = await service.CreateAsync(options);
+            var response = await service.CreateAsync(options);
 
             var intent = new CreatePaymentIntentResponseDto()
             {
@@ -37,22 +40,22 @@ namespace ShoeStore.Services
             return intent;
         }
 
-        public async Task<PaymentIntent> StorePaymentDetails(StorePaymentDto storePaymentDto, string userId, string userEmail)
+        public async Task<PaymentIntent> StorePaymentDetails(string paymentIntentId)
         {
-            var userDetails = _dbContext.UserDetails.FirstOrDefault(u => u.AspNetUserId == userId);
 
             var service = new PaymentIntentService();
             var paymentIntent = await service.GetAsync(
-                storePaymentDto.PaymentIntentId,
+                paymentIntentId,
                 new PaymentIntentGetOptions
                 {
-                    Expand = new List<string> { "payment_method", "latest_charge" }
+                    Expand = new List<string> { "latest_charge" }
                 }
             );
 
-            var paymentMethod = paymentIntent.PaymentMethod;
+            var latestCharge = paymentIntent.LatestCharge as Charge;
 
-            // Map Stripe type to your DB PaymentMethod.Id
+            var paymentMethod = latestCharge?.PaymentMethodDetails;
+
             var paymentMethodCode = paymentMethod?.Type switch
             {
                 "card" => "card",
@@ -66,24 +69,19 @@ namespace ShoeStore.Services
                 .Select(pm => pm.Id)
                 .Single();
 
-            // add more mappings if needed
-
-            var latestCharge = paymentIntent.LatestCharge as Charge;
 
             var statusId = paymentIntent.Status switch
             {
-                "succeeded" => 3,
-                "processing" => 2,
-                "requires_capture" => 2,
-                "canceled" => 5,
-                "requires_payment_method" => 1,
-                "requires_confirmation" => 1,
-                "requires_action" => 1,
-                _ => 1
-            };
+                "succeeded" => (int)PaymentStatusEnum.Paid,
+                "processing" => (int)PaymentStatusEnum.Authorised,
+                "requires_capture" => (int)PaymentStatusEnum.Authorised,
+                "requires_payment_method" => (int)PaymentStatusEnum.Failed,
+                "requires_confirmation" => (int)PaymentStatusEnum.Pending,
+                "requires_action" => (int)PaymentStatusEnum.Pending,
+                "canceled" => (int)PaymentStatusEnum.Failed,
 
-            if (latestCharge?.AmountRefunded > 0)
-                statusId = latestCharge.AmountRefunded >= latestCharge.Amount ? 6 : 7;
+                _ => (int)PaymentStatusEnum.Pending
+            };
 
             var paymentToStore = new Payment()
             {
@@ -93,9 +91,9 @@ namespace ShoeStore.Services
                 TransactionId = paymentIntent.Id,
                 PaymentStatus = statusId,
                 PaymentMethodId = paymentMethodId,
-                ProcessedAt = DateTime.Now,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
+                ProcessedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
                 CardBrand = paymentMethod?.Card?.Brand,
                 CardLast4 = paymentMethod?.Card?.Last4,
                 ReceiptUrl = latestCharge?.ReceiptUrl
@@ -107,21 +105,35 @@ namespace ShoeStore.Services
             return paymentIntent;
         }
 
-        public async Task<bool?> RefundPayment(int paymentId)
+        public async Task<bool> RefundPayment(string paymentIntentId)
         {
-            var existingPayment = _dbContext.Payments.FirstOrDefault(p => p.Id == paymentId);
+            var refundService = new Stripe.RefundService();
+            var refund = await refundService.CreateAsync(new RefundCreateOptions
+            {
+                PaymentIntent = paymentIntentId
+            });
 
-            if (existingPayment == null) return null;
+            var existingPayment = _dbContext.Payments
+                .FirstOrDefault(p => p.PaymentIntentId == paymentIntentId);
 
-            existingPayment.PaymentStatus = 6;
-            existingPayment.UpdatedAt = DateTime.Now;
+            if (existingPayment != null)
+            {
+                existingPayment.PaymentStatus = (int)PaymentStatusEnum.Refunded;
+                existingPayment.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
 
-            await _dbContext.SaveChangesAsync();
-            //int rowsAffected = await _dbContext.SaveChangesAsync();
-            //if (rowsAffected != 1) return false;
-
-            return true;
+            return refund.Status == "succeeded";
         }
+
+        public async Task<PaymentIntent> GetPaymentIntentFromStripe(string paymentIntentId)
+        {
+            var service = new PaymentIntentService();
+            var paymentIntent = await service.GetAsync(paymentIntentId);
+
+            return paymentIntent;
+        }
+
 
     }
 }

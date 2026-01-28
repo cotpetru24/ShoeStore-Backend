@@ -93,21 +93,5 @@ namespace ShoeStore.Controllers
         }
 
 
-
-        [HttpPost("pending")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CreatePendingOrderResponseDto))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreatePendingOrder([FromBody] CreatePendingOrderRequestDto request)
-        {
-            var userId = User.FindFirst("Id")?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "User not authenticated" });
-
-            var result = await _orderService.CreatePendingOrder(request, userId);
-            return Ok(result);
-        }
-
     }
 }

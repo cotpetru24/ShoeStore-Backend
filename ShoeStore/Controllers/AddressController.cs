@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Dto.Order;
+using ShoeStore.Dto.Address;
 using ShoeStore.Services;
 using Stripe.Climate;
 

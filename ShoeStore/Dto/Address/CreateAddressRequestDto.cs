@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ShoeStore.Dto.Order
+namespace ShoeStore.Dto.Address
 {
     public class CreateAddressRequestDto
     {
@@ -9,9 +9,6 @@ namespace ShoeStore.Dto.Order
 
         [Required(ErrorMessage = "City is required")]
         public string City { get; set; } = null!;
-
-        [Required(ErrorMessage = "County is required")]
-        public string County { get; set; } = null!;
 
         [Required(ErrorMessage = "Postcode is required")]
         public string Postcode { get; set; } = null!;

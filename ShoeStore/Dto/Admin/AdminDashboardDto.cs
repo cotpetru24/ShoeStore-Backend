@@ -6,7 +6,7 @@ namespace ShoeStore.Dto.Admin
         public int TotalOrders { get; set; }
         public int TotalProducts { get; set; }
         public decimal TotalRevenue { get; set; }
-        public int PendingOrders { get; set; }
+        public int ReturnedOrders { get; set; }
         public int ProcessingOrders { get; set; }
         public int ShippedOrders { get; set; }
         public int DeliveredOrders { get; set; }

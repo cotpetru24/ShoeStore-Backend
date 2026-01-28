@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
 using ShoeStore.Dto.Payment;
@@ -22,139 +23,174 @@ namespace ShoeStore.Services
             _paymentService = paymentService;
         }
 
-        public async Task<PlaceOrderResponseDto> PlaceOrderAsync(
-    PlaceOrderRequestDto request,
-    string userId)
+
+        public async Task<PlaceOrderResponseDto> PlaceOrderAsync(PlaceOrderRequestDto request, string userId)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            if (await _context.Payments.AnyAsync(p => p.PaymentIntentId == request.PaymentIntentId))
+                throw new InvalidOperationException("PaymentIntent already used");
+
+
+            var paymentIntent = await _paymentService.GetPaymentIntentFromStripe(request.PaymentIntentId);
+
+            if (paymentIntent.Status != "succeeded")
+                throw new InvalidOperationException($"Payment not completed. Status: {paymentIntent.Status}");
+
+            bool orderCommitted = false;
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
 
             try
             {
-                decimal subtotal = 0;
-                var orderItems = new List<OrderItem>();
-
-                foreach (var item in request.OrderItems)
-                {
-                    var product = await _context.Products
-                        .Include(p => p.ProductSizes)
-                        .FirstOrDefaultAsync(p => p.Id == item.ProductId);
-
-                    if (product == null)
-                        throw new ArgumentException($"Product with ID {item.ProductId} not found");
-
-                    var productSize = product.ProductSizes
-                        .FirstOrDefault(s => s.Barcode == item.ProductSizeBarcode);
-
-                    if (productSize == null)
-                        throw new ArgumentException(
-                            $"Size {item.ProductSizeBarcode} not found for product {product.Name}");
-
-                    if (productSize.Stock < item.Quantity)
-                        throw new ArgumentException(
-                            $"Insufficient stock for product {product.Name}, size {item.ProductSizeBarcode}. " +
-                            $"Available: {productSize.Stock}, Requested: {item.Quantity}");
-
-                    // Reduce stock at SIZE level
-                    productSize.Stock -= item.Quantity;
-
-                    var orderItem = new OrderItem
-                    {
-                        UnitPrice = product.Price,
-                        Quantity = item.Quantity,
-                        CreatedAt = DateTime.UtcNow,
-
-
-
-
-                        //--------- amend the front end to send the ProductSizeId instead of Size -----------
-                        ProductSizeId = product.ProductSizes.First(ps => ps.Barcode == item.ProductSizeBarcode).Id
-                    };
-
-                    orderItems.Add(orderItem);
-                    subtotal += product.Price * item.Quantity;
-                }
-
-                // Validate shipping address
-                var shippingAddress = await _context.UserAddresses
-                    .FirstOrDefaultAsync(a =>
-                        a.Id == request.ShippingAddressId &&
-                        a.UserId == userId);
-
-                if (shippingAddress == null)
-                    throw new ArgumentException("Invalid shipping address");
-
-                // Billing address
-                UserAddress billingAddress;
-
-                if (request.BillingAddressSameAsShipping)
-                {
-                    billingAddress = new UserAddress
-                    {
-                        AddressLine1 = shippingAddress.AddressLine1,
-                        City = shippingAddress.City,
-                        Country = shippingAddress.Country,
-                        Postcode = shippingAddress.Postcode,
-                        UserId = userId
-                    };
-                }
-                else
-                {
-                    billingAddress = new UserAddress
-                    {
-                        AddressLine1 = request.BillingAddressRequest.AddressLine1,
-                        City = request.BillingAddressRequest.City,
-                        Country = request.BillingAddressRequest.Country,
-                        Postcode = request.BillingAddressRequest.Postcode,
-                        UserId = userId
-                    };
-                }
-
-                _context.UserAddresses.Add(billingAddress);
-                await _context.SaveChangesAsync();
-
-
-                var total = subtotal + request.ShippingCost - request.Discount;
-
-                var order = new DataContext.PostgreSQL.Models.Order
-                {
-                    UserId = userId,
-                    OrderStatus = (int)OrderStatusEnum.Processing,
-                    Subtotal = subtotal,
-                    ShippingCost = request.ShippingCost,
-                    Discount = request.Discount,
-                    Total = total,
-                    ShippingAddressId = shippingAddress.Id,
-                    BillingAddressId = billingAddress.Id,
-                    Notes = request.Notes,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
-
-                foreach (var item in orderItems)
-                    item.OrderId = order.Id;
-
-                _context.OrderItems.AddRange(orderItems);
-                await _context.SaveChangesAsync();
+                var payment = await _paymentService.StorePaymentDetails(request.PaymentIntentId);
+                var order = await CreateOrderAsync(request, userId, request.PaymentIntentId);
 
                 await transaction.CommitAsync();
+                orderCommitted = true;
 
-                return new PlaceOrderResponseDto
-                {
-                    OrderId = order.Id,
-                    Message = "Order placed successfully",
-                    Total = order.Total,
-                    CreatedAt = order.CreatedAt
-                };
+                return order;
+
+
             }
             catch
             {
-                await transaction.RollbackAsync();
+                try
+                {
+                    await transaction.RollbackAsync();
+                }
+                catch
+                {
+                }
+
+                if (!orderCommitted)
+                {
+                    await _paymentService.RefundPayment(request.PaymentIntentId);
+                }
+
                 throw;
             }
         }
+
+
+
+        public async Task<PlaceOrderResponseDto> CreateOrderAsync(PlaceOrderRequestDto request, string userId, string paymentIntentId)
+        {
+
+            decimal subtotal = 0;
+            var orderItems = new List<OrderItem>();
+
+            foreach (var item in request.OrderItems)
+            {
+                var product = await _context.Products
+                    .Include(p => p.ProductSizes)
+                    .FirstOrDefaultAsync(p => p.Id == item.ProductId);
+
+                if (product == null)
+                    throw new ArgumentException($"Product with ID {item.ProductId} not found");
+
+                var productSize = product.ProductSizes
+                    .FirstOrDefault(s => s.Barcode == item.ProductSizeBarcode);
+
+                if (productSize == null)
+                    throw new ArgumentException(
+                        $"Size {item.ProductSizeBarcode} not found for product {product.Name}");
+
+                if (productSize.Stock < item.Quantity)
+                    throw new ArgumentException(
+                        $"Insufficient stock for product {product.Name}, size {item.ProductSizeBarcode}. " +
+                        $"Available: {productSize.Stock}, Requested: {item.Quantity}");
+
+                // Reduce stock at SIZE level
+                productSize.Stock -= item.Quantity;
+
+                var orderItem = new OrderItem
+                {
+                    UnitPrice = product.Price,
+                    Quantity = item.Quantity,
+                    CreatedAt = DateTime.UtcNow,
+
+
+
+
+                    //--------- amend the front end to send the ProductSizeId instead of Size -----------
+                    ProductSizeId = product.ProductSizes.First(ps => ps.Barcode == item.ProductSizeBarcode).Id
+                };
+
+                orderItems.Add(orderItem);
+                subtotal += product.Price * item.Quantity;
+            }
+
+            // Validate shipping address
+            var shippingAddress = await _context.UserAddresses
+                .FirstOrDefaultAsync(a =>
+                    a.Id == request.ShippingAddressId &&
+                    a.UserId == userId);
+
+            if (shippingAddress == null)
+                throw new ArgumentException("Invalid shipping address");
+
+            // Billing address
+            UserAddress? billingAddress = null;
+
+            if (!request.BillingAddressSameAsShipping)
+            {
+                billingAddress = new UserAddress
+                {
+                    AddressLine1 = request.BillingAddressRequest.AddressLine1,
+                    City = request.BillingAddressRequest.City,
+                    Country = request.BillingAddressRequest.Country,
+                    Postcode = request.BillingAddressRequest.Postcode,
+                    UserId = userId
+                };
+
+                _context.UserAddresses.Add(billingAddress);
+                await _context.SaveChangesAsync();
+            }
+
+
+            var total = subtotal + request.ShippingCost - request.Discount;
+            var paymentId = await _context.Payments
+                .Where(p => p.PaymentIntentId == paymentIntentId)
+                .Select(p => p.Id)
+                .FirstOrDefaultAsync();
+                
+
+            var order = new DataContext.PostgreSQL.Models.Order
+            {
+                UserId = userId,
+                OrderStatus = (int)OrderStatusEnum.Processing,
+                Subtotal = subtotal,
+                ShippingCost = request.ShippingCost,
+                Discount = request.Discount,
+                Total = total,
+                ShippingAddressId = shippingAddress.Id,
+                BillingAddressId = request.BillingAddressSameAsShipping == true ? shippingAddress.Id : billingAddress!.Id,
+                Notes = request.Notes,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                PaymentId = paymentId
+            };
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            foreach (var item in orderItems)
+                item.OrderId = order.Id;
+
+            _context.OrderItems.AddRange(orderItems);
+            await _context.SaveChangesAsync();
+
+
+            return new PlaceOrderResponseDto
+            {
+                OrderId = order.Id,
+                Message = "Order placed successfully",
+                Total = order.Total,
+                CreatedAt = order.CreatedAt
+            };
+
+        }
+
 
         public async Task<OrderDto?> GetOrderByIdAsync(int orderId, string userId)
         {
@@ -162,7 +198,6 @@ namespace ShoeStore.Services
 
             var order = await _context.Orders
                 .Where(o => o.Id == orderId && o.UserId == userId)
-                .Include(o => o.OrderStatus)
                           .Include(o => o.ShippingAddress)
                           .Include(o => o.UserDetail)
                 .Include(o => o.BillingAddress)
@@ -179,7 +214,6 @@ namespace ShoeStore.Services
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payment)
-                    .ThenInclude(s => s.PaymentStatus)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
 
@@ -228,6 +262,7 @@ namespace ShoeStore.Services
                     OrderId = order.Id,
                     CreatedAt = oi.CreatedAt,
                     ProductId = oi.ProductSize.ProductId,
+                    ProductName = oi.ProductSize.Product.Name,
                     Quantity = oi.Quantity,
                     ProductPrice = oi.UnitPrice,
                     BrandName = oi.ProductSize.Product.Brand.Name,
@@ -268,10 +303,9 @@ namespace ShoeStore.Services
 
             var query = _context.Orders
                 .Where(o => o.UserId == userId)
-                .Include(o => o.OrderStatus)
                           .Include(o => o.ShippingAddress)
+                          .Include(o => o.BillingAddress)
                           .Include(o => o.UserDetail)
-                .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
@@ -280,13 +314,11 @@ namespace ShoeStore.Services
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
-                        //.ThenInclude(p => p.ProductImages)
                         .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
 
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payment)
-                    .ThenInclude(s => s.PaymentStatus)
                 .AsQueryable();
 
             // Apply filters
@@ -407,13 +439,14 @@ namespace ShoeStore.Services
                 .FirstOrDefaultAsync();
 
                 if (existingOrder == null
-                    || existingOrder.OrderStatus == 5
-                    || existingOrder.OrderStatus == 6
-                    || existingOrder.OrderStatus == 7) return null;
+                    || existingOrder.OrderStatus != (int)OrderStatusEnum.Processing)
+                {
+                    throw new InvalidOperationException("Invalid status transition from Shipped.");
+                }
 
-                existingOrder.OrderStatus = 5;
+                existingOrder.OrderStatus = (int)OrderStatusEnum.Cancelled;
 
-                bool? refundResponse = await _paymentService.RefundPayment(orderId);
+                bool refundResponse = await _paymentService.RefundPayment(existingOrder.Payment.PaymentIntentId);
 
                 if (refundResponse != true)
                 {
@@ -432,142 +465,5 @@ namespace ShoeStore.Services
                 throw;
             }
         }
-
-
-        public async Task<PlaceOrderResponseDto> CreatePendingOrder(CreatePendingOrderRequestDto request,string userId)
-        {
-
-
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                decimal subtotal = 0;
-                var orderItems = new List<OrderItem>();
-
-                foreach (var item in request.OrderItems)
-                {
-                    var product = await _context.Products
-                        .Include(p => p.ProductSizes)
-                        .FirstOrDefaultAsync(p => p.Id == item.ProductId);
-
-                    if (product == null)
-                        throw new ArgumentException($"Product with ID {item.ProductId} not found");
-
-                    var productSize = product.ProductSizes
-                        .FirstOrDefault(s => s.Barcode == item.ProductSizeBarcode);
-
-                    if (productSize == null)
-                        throw new ArgumentException(
-                            $"Size {item.ProductSizeBarcode} not found for product {product.Name}");
-
-                    if (productSize.Stock < item.Quantity)
-                        throw new ArgumentException(
-                            $"Insufficient stock for product {product.Name}, size {item.ProductSizeBarcode}. " +
-                            $"Available: {productSize.Stock}, Requested: {item.Quantity}");
-
-                    // Reduce stock at SIZE level
-                    productSize.Stock -= item.Quantity;
-
-                    var orderItem = new OrderItem
-                    {
-                        UnitPrice = product.Price,
-                        Quantity = item.Quantity,
-                        CreatedAt = DateTime.UtcNow,
-
-
-
-
-                        //--------- amend the front end to send the ProductSizeId instead of Size -----------
-                        ProductSizeId = product.ProductSizes.First(ps => ps.Barcode == item.ProductSizeBarcode).Id
-                    };
-
-                    orderItems.Add(orderItem);
-                    subtotal += product.Price * item.Quantity;
-                }
-
-                // Validate shipping address
-                var shippingAddress = await _context.UserAddresses
-                    .FirstOrDefaultAsync(a =>
-                        a.Id == request.ShippingAddressId &&
-                        a.UserId == userId);
-
-                if (shippingAddress == null)
-                    throw new ArgumentException("Invalid shipping address");
-
-                // Billing address
-                UserAddress billingAddress;
-
-                if (request.BillingAddressSameAsShipping)
-                {
-                    billingAddress = new UserAddress
-                    {
-                        AddressLine1 = shippingAddress.AddressLine1,
-                        City = shippingAddress.City,
-                        Country = shippingAddress.Country,
-                        Postcode = shippingAddress.Postcode,
-                        UserId = userId
-                    };
-                }
-                else
-                {
-                    billingAddress = new UserAddress
-                    {
-                        AddressLine1 = request.BillingAddressRequest.AddressLine1,
-                        City = request.BillingAddressRequest.City,
-                        Country = request.BillingAddressRequest.Country,
-                        Postcode = request.BillingAddressRequest.Postcode,
-                        UserId = userId
-                    };
-                }
-
-                _context.UserAddresses.Add(billingAddress);
-                await _context.SaveChangesAsync();
-
-
-                var total = subtotal + request.ShippingCost - request.Discount;
-
-                var order = new DataContext.PostgreSQL.Models.Order
-                {
-                    UserId = userId,
-                    OrderStatus = (int)OrderStatusEnum.Processing,
-                    Subtotal = subtotal,
-                    ShippingCost = request.ShippingCost,
-                    Discount = request.Discount,
-                    Total = total,
-                    ShippingAddressId = shippingAddress.Id,
-                    BillingAddressId = billingAddress.Id,
-                    Notes = request.Notes,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
-
-                foreach (var item in orderItems)
-                    item.OrderId = order.Id;
-
-                _context.OrderItems.AddRange(orderItems);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                return new PlaceOrderResponseDto
-                {
-                    OrderId = order.Id,
-                    Message = "Order placed successfully",
-                    Total = order.Total,
-                    CreatedAt = order.CreatedAt
-                };
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
     }
 }

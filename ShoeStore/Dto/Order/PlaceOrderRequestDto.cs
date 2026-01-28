@@ -1,3 +1,4 @@
+using ShoeStore.Dto.Address;
 using System.ComponentModel.DataAnnotations;
 
 namespace ShoeStore.Dto.Order
@@ -21,6 +22,8 @@ namespace ShoeStore.Dto.Order
         public decimal Discount { get; set; } = 0;
 
         public string? Notes { get; set; }
+
+        public string PaymentIntentId { get; set; } = null;
     }
 
     public class OrderItemRequestDto

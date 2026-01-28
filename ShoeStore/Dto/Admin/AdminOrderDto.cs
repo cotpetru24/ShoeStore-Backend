@@ -1,3 +1,4 @@
+using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Order;
 
 namespace ShoeStore.Dto.Admin
@@ -104,28 +105,5 @@ namespace ShoeStore.Dto.Admin
     }
 
 
-    // NOTE:
-    // - Processing can ONLY be set by payment webhook
-    // - Cancelled and Returned are terminal
-    // - PaymentFailed means no money was captured
-    public enum OrderStatusEnum
-    {
-        PendingPayment = 1,
-        Processing = 2,
-        Shipped = 3,
-        Delivered = 4,
-        Cancelled = 5,
-        PaymentFailed = 6,
-        Returned = 7,
-    }
-
-    public enum PaymentStatusEnum
-    {
-        Pending = 1,
-        Authorised = 3,
-        Failed = 4,
-        Refunded = 6,
-        Paid = 12
-    }
 
 }

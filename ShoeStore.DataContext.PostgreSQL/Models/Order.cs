@@ -29,13 +29,13 @@ public partial class Order
 
     public DateTime UpdatedAt { get; set; }
 
-    public int? PaymentId { get; set; }
+    public int PaymentId { get; set; }
 
     public virtual UserAddress BillingAddress { get; set; } = null!;
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
-    public virtual Payment? Payment { get; set; }
+    public virtual Payment Payment { get; set; } = null!;
 
     public virtual UserAddress ShippingAddress { get; set; } = null!;
 

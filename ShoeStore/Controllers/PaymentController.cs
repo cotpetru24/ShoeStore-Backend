@@ -41,45 +41,42 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> StorePaymentDetails([FromBody] StorePaymentDto storePaymentDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "User not authenticated" });
 
             var userEmail = User.FindFirst("Email")?.Value;
-            var paymentIntent = await _paymentService.StorePaymentDetails(storePaymentDto, userId, userEmail);
+            var paymentIntent = await _paymentService.StorePaymentDetails(storePaymentDto.PaymentIntentId);
 
             return Ok();
         }
 
 
-        [HttpPut("RefundPayment")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> RefundPayment([FromBody] int orderId)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        //[HttpPut("RefundPayment")]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        //public async Task<IActionResult> RefundPayment([FromBody] int orderId)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
 
-            var userId = User.FindFirst("Id")?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "User not authenticated" });
+        //    var userId = User.FindFirst("Id")?.Value;
+        //    if (string.IsNullOrEmpty(userId))
+        //        return Unauthorized(new { message = "User not authenticated" });
 
-            var refundResult = await _paymentService.RefundPayment(orderId);
-            if (refundResult == null)
-                return NotFound(new { message = "Payment intent not found or could not be refunded." });
+        //    var refundResult = await _paymentService.RefundPayment(orderId);
+        //    if (refundResult == null)
+        //        return NotFound(new { message = "Payment intent not found or could not be refunded." });
 
-            if (refundResult == false)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to refund." });
-            }
+        //    if (refundResult == false)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to refund." });
+        //    }
 
-            return Ok(new { message = "Payment refunded successfully." });
-        }
+        //    return Ok(new { message = "Payment refunded successfully." });
+        //}
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
 using Stripe.Climate;
@@ -27,7 +28,6 @@ namespace ShoeStore.Services
         public async Task<AdminOrderListDto> GetOrdersAsync(GetAdminOrdersRequestDto request)
         {
             var query = _context.Orders
-                .Include(o => o.OrderStatus)
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
@@ -36,7 +36,6 @@ namespace ShoeStore.Services
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payment)
-                    .ThenInclude(p => p.PaymentStatus)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
                 .AsQueryable();
@@ -309,22 +308,63 @@ namespace ShoeStore.Services
 
                 if (order == null) return false;
 
-                // refunded orders cannot be amended
-                if (order.Payment.PaymentStatus == (int)PaymentStatusEnum.Refunded &&
-                    request.OrderStatusId != (int)OrderStatusEnum.Cancelled &&
-                    request.OrderStatusId != (int)OrderStatusEnum.Returned)
+
+
+                // Conditions for current status == cancelled || returned
+                if (order.OrderStatus == (int)OrderStatusEnum.Cancelled ||
+                    order.OrderStatus == (int)OrderStatusEnum.Returned)
+                {
+                    throw new InvalidOperationException("Cannot update status of a cancelled or returned order.");
+                }
+
+                //Conditions for request status == processing
+                if (request.OrderStatusId == (int)OrderStatusEnum.Processing)
                 {
                     throw new InvalidOperationException(
-                        "Cannot change order status after refund."
+                        "Order status 'Processing' can only be set by the payment system."
                     );
                 }
+
+
+                // Conditions forcurrent status == processing
+                if (order.OrderStatus == (int)OrderStatusEnum.Processing &&
+                    request.OrderStatusId != (int)OrderStatusEnum.Shipped &&
+                    request.OrderStatusId != (int)OrderStatusEnum.Cancelled)
+                {
+                    throw new InvalidOperationException("Invalid status transition from Processing.");
+                }
+
+                // Conditions for current status == shipped
+                if (order.OrderStatus == (int)OrderStatusEnum.Shipped &&
+                    request.OrderStatusId != (int)OrderStatusEnum.Delivered)
+                {
+                    throw new InvalidOperationException("Invalid status transition from Shipped.");
+                }
+
+                // Conditions for current status == delivered
+                if (request.OrderStatusId == (int)OrderStatusEnum.Returned &&
+                    order.OrderStatus != (int)OrderStatusEnum.Delivered)
+                {
+                    throw new InvalidOperationException("Order can be returned only if it has been delivered.");
+                }
+
+
+
+                //// refunded orders cannot be amended
+                //if (order.Payment.PaymentStatus == (int)PaymentStatusEnum.Refunded &&
+                //    request.OrderStatusId != (int)OrderStatusEnum.Cancelled &&
+                //    request.OrderStatusId != (int)OrderStatusEnum.Returned)
+                //{
+                //    throw new InvalidOperationException(
+                //        "Cannot change order status after refund."
+                //    );
+                //}
 
                 // if cancelling => refund
                 if (request.OrderStatusId == (int)OrderStatusEnum.Cancelled &&
                     order.Payment.PaymentStatus != (int)PaymentStatusEnum.Refunded)
                 {
-                    var refundResult =
-                        await _paymentService.RefundPayment(order.Id);
+                    var refundResult = await _paymentService.RefundPayment(order.Payment.PaymentIntentId);
 
                     if (refundResult != true)
                     {

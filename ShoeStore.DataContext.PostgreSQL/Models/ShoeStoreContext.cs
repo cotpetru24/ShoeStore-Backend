@@ -316,6 +316,7 @@ public partial class ShoeStoreContext : DbContext
 
             entity.HasOne(d => d.Payment).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.PaymentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("orders_payment_id_fkey");
 
             entity.HasOne(d => d.ShippingAddress).WithMany(p => p.OrderShippingAddresses)
@@ -596,6 +597,8 @@ public partial class ShoeStoreContext : DbContext
 
             entity.ToTable("user_addresses");
 
+            entity.HasIndex(e => e.UserId, "fki_fk_user_addresses_user");
+
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.AddressLine1)
                 .HasMaxLength(255)
@@ -609,6 +612,9 @@ public partial class ShoeStoreContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.IsDefault)
                 .HasDefaultValue(false)
                 .HasColumnName("is_default");
@@ -622,7 +628,8 @@ public partial class ShoeStoreContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.UserAddresses)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("fk_shipping_address_user");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_user_addresses_user");
         });
 
         modelBuilder.Entity<UserDetail>(entity =>

@@ -9,7 +9,7 @@ namespace ShoeStore.Dto.User
         public DateTime JoinDate { get; set; }
         public int TotalOrders { get; set; }
         public int CompletedOrders { get; set; }
-        public int PendingOrders { get; set; }
+        public int ReturnedOrders { get; set; }
     }
 }
 

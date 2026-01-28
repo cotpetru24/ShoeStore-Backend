@@ -34,7 +34,6 @@ namespace ShoeStore.Services
 
             // Get total revenue from orders with processing, shipped, and delivered status
             var totalRevenueOrders = await _context.Orders
-                .Include(o => o.OrderStatus)
                 .Where(o => o.OrderStatus != null
                 && ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered
                 || (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing
@@ -44,14 +43,13 @@ namespace ShoeStore.Services
 
             // Get order counts by status
             var ordersWithStatus = await _context.Orders
-                .Include(o => o.OrderStatus)
                 .ToListAsync();
 
-            var pendingOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.PendingPayment );
+            var returnedOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Returned);
             var processingOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing);
-            var shippedOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Shipped );
-            var deliveredOrdersCount = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered );
-            var cancelledOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Cancelled );
+            var shippedOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Shipped);
+            var deliveredOrdersCount = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
+            var cancelledOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Cancelled);
 
             // Calculate today's revenue
             var todayRevenue = totalRevenueOrders
@@ -151,7 +149,7 @@ namespace ShoeStore.Services
                 TotalProducts = totalProducts,
                 TotalRevenue = totalRevenue,
                 NewOrdersToday = newOrdersToday,
-                PendingOrders = pendingOrders,
+                ReturnedOrders = returnedOrders,
                 ProcessingOrders = processingOrders,
                 ShippedOrders = shippedOrders,
                 DeliveredOrders = deliveredOrdersCount,

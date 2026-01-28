@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
 
@@ -108,7 +109,6 @@ namespace ShoeStore.Services
 
                 // Get user statistics
                 var userOrders = await _context.Orders
-                    .Include(o => o.OrderStatus)
                     .Where(o => o.UserId == user.AspNetUserId)
                     .ToListAsync();
 
@@ -311,7 +311,6 @@ namespace ShoeStore.Services
         public async Task<AdminOrderListDto> GetUserOrdersAsync(GetUserOrdersRequestDto request)
         {
             var query = _context.Orders
-                .Include(o => o.OrderStatus)
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
@@ -320,7 +319,6 @@ namespace ShoeStore.Services
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.Payment)
-                    .ThenInclude(p => p.PaymentStatus)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
                 .Where(o => o.UserId == request.UserId)

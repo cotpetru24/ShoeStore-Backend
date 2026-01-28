@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
-using ShoeStore.Dto.Order;
+using ShoeStore.Dto.Address;
 
 namespace ShoeStore.Services
 {
@@ -76,7 +76,7 @@ namespace ShoeStore.Services
         }
 
 
-        public async Task<CreateAddressResponseDto> UpdateAddressAsync( AddressDto request, string userId)
+        public async Task<CreateAddressResponseDto> UpdateAddressAsync(AddressDto request, string userId)
         {
             var address = await _context.UserAddresses
                 .Where(a => a.Id == request.Id && a.UserId == userId)

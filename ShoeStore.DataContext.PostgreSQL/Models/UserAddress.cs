@@ -23,6 +23,8 @@ public partial class UserAddress
 
     public DateTime UpdatedAt { get; set; }
 
+    public bool IsActive { get; set; }
+
     public virtual ICollection<Order> OrderBillingAddresses { get; set; } = new List<Order>();
 
     public virtual ICollection<Order> OrderShippingAddresses { get; set; } = new List<Order>();

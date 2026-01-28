@@ -1,4 +1,4 @@
-namespace ShoeStore.Dto.Order
+namespace ShoeStore.Dto.Address
 {
     public class CreateAddressResponseDto
     {

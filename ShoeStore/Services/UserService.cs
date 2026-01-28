@@ -29,9 +29,9 @@ namespace ShoeStore.Services
             var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
             var completedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
-            var pendingOrders = await _context.Orders
+            var returnedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId &&
-                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.PendingPayment ||
+                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Returned ||
                     (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing));
 
             return new UserProfileDto
@@ -43,7 +43,7 @@ namespace ShoeStore.Services
                 JoinDate = userDetail != null ? DateTime.UtcNow : DateTime.UtcNow, // Default to now if no user detail
                 TotalOrders = totalOrders,
                 CompletedOrders = completedOrders,
-                PendingOrders = pendingOrders
+                ReturnedOrders = returnedOrders
             };
         }
 
@@ -99,9 +99,9 @@ namespace ShoeStore.Services
             var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
             var completedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
-            var pendingOrders = await _context.Orders
+            var returnedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId &&
-                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.PendingPayment ||
+                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Returned ||
                     (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing));
             var totalSpent = await _context.Orders
                 .Where(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
@@ -111,7 +111,7 @@ namespace ShoeStore.Services
             {
                 TotalOrders = totalOrders,
                 CompletedOrders = completedOrders,
-                PendingOrders = pendingOrders,
+                ReturnedOrders = returnedOrders,
                 TotalSpent = totalSpent
             };
         }
