@@ -4,6 +4,7 @@ using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
+using ShoeStore.Dto.Payment;
 using Stripe.Climate;
 using Order = ShoeStore.DataContext.PostgreSQL.Models.Order;
 
@@ -309,6 +310,13 @@ namespace ShoeStore.Services
                 if (order == null) return false;
 
 
+                if (order.Payment.PaymentStatus == (int)PaymentStatusEnum.Refunded)
+                {
+                    throw new InvalidOperationException(
+                        "Order status cannot be changed after a refund."
+                    );
+                }
+
 
                 // Conditions for current status == cancelled || returned
                 if (order.OrderStatus == (int)OrderStatusEnum.Cancelled ||
@@ -349,19 +357,9 @@ namespace ShoeStore.Services
                 }
 
 
-
-                //// refunded orders cannot be amended
-                //if (order.Payment.PaymentStatus == (int)PaymentStatusEnum.Refunded &&
-                //    request.OrderStatusId != (int)OrderStatusEnum.Cancelled &&
-                //    request.OrderStatusId != (int)OrderStatusEnum.Returned)
-                //{
-                //    throw new InvalidOperationException(
-                //        "Cannot change order status after refund."
-                //    );
-                //}
-
-                // if cancelling => refund
-                if (request.OrderStatusId == (int)OrderStatusEnum.Cancelled &&
+                // If cancelling or returned => refund
+                if ((request.OrderStatusId == (int)OrderStatusEnum.Cancelled ||
+                    request.OrderStatusId == (int)OrderStatusEnum.Returned) &&
                     order.Payment.PaymentStatus != (int)PaymentStatusEnum.Refunded)
                 {
                     var refundResult = await _paymentService.RefundPayment(order.Payment.PaymentIntentId);

@@ -46,11 +46,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateUserProfileAsync([FromBody] UpdateUserProfileRequestDto request)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
             {
@@ -74,11 +69,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequestDto request)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var userId = User.FindFirst("Id")?.Value;
             if (string.IsNullOrEmpty(userId))
             {
@@ -93,31 +83,5 @@ namespace ShoeStore.Controllers
 
             return Ok(new { message = "Password changed successfully" });
         }
-
-
-        [HttpGet("stats")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserStatsDto))]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetUserStatsAsync()
-        {
-            var userId = User.FindFirst("Id")?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User ID not found in token" });
-            }
-
-            var stats = await _userService.GetUserStatsAsync(userId);
-            return Ok(stats);
-        }
-
-
-        //[Authorize(Roles = "Administrator")]
-        //[HttpGet("users")]
-        //public async Task<IActionResult> GetAllUsersAsync()
-        //{
-        //    var users = await _userService.GetAllUsersAsync();
-        //    return Ok(users);
-        //}
     }
 }

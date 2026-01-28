@@ -94,28 +94,6 @@ namespace ShoeStore.Services
             return result.Succeeded;
         }
 
-        public async Task<UserStatsDto> GetUserStatsAsync(string userId)
-        {
-            var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
-            var completedOrders = await _context.Orders
-                .CountAsync(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
-            var returnedOrders = await _context.Orders
-                .CountAsync(o => o.UserId == userId &&
-                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Returned ||
-                    (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing));
-            var totalSpent = await _context.Orders
-                .Where(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
-                .SumAsync(o => o.Total);
-
-            return new UserStatsDto
-            {
-                TotalOrders = totalOrders,
-                CompletedOrders = completedOrders,
-                ReturnedOrders = returnedOrders,
-                TotalSpent = totalSpent
-            };
-        }
-
         public async Task<List<GetAllUsersResponseDto>> GetAllUsersAsync()
         {
             var users = await _context.UserDetails

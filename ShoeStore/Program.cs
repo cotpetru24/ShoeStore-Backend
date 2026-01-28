@@ -24,10 +24,8 @@ namespace ShoeStore
 
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-
             var isDevelopment = builder.Environment.IsDevelopment();
 
-            // Register DbContext - use connection string from config or environment variable
             var connectionString = isDevelopment
                 ? builder.Configuration.GetConnectionString("ShoeStoreConnection")
                 : Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -49,14 +47,11 @@ namespace ShoeStore
             });
 
 
-            // Register health checks only if connection string is available
             var healthCheckConnStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
             if (!string.IsNullOrEmpty(healthCheckConnStr))
             {
                 builder.Services.AddHealthChecks().AddNpgSql(healthCheckConnStr, name: "postgres");
             }
-
-
 
             builder.Services.AddScoped<ProductService, ProductService>();
             builder.Services.AddScoped<AuthService, AuthService>();
@@ -111,7 +106,6 @@ namespace ShoeStore
             });
 
 
-
             var test = Environment.GetEnvironmentVariable("Stripe__SecretKey");
 
             StripeConfiguration.ApiKey = Environment.GetEnvironmentVariable("Stripe__SecretKey");
@@ -128,7 +122,6 @@ namespace ShoeStore
 
             var app = builder.Build();
 
-            // Skip seeding in test environment
             if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
             {
                 using (var scope = app.Services.CreateScope())
@@ -189,7 +182,6 @@ namespace ShoeStore
                     await context.Response.WriteAsJsonAsync(problem);
                 });
             });
-
 
 
             app.UseHttpsRedirection();

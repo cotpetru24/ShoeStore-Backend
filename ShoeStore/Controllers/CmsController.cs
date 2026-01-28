@@ -24,7 +24,7 @@ namespace ShoeStore.Controllers
         {
             var response = await _cmsService.GetCmsNavAndFooterAsync();
             if (response == null)
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to get nav and footer." });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to get nav and footer config." });
 
             return Ok(response);
         }
@@ -37,7 +37,7 @@ namespace ShoeStore.Controllers
         {
             var response = await _cmsService.GetCmsLandingPageAsync();
             if (response == null)
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to get landing." });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to get landing page config." });
 
             return Ok(response);
         }

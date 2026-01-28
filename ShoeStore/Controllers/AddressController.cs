@@ -49,7 +49,7 @@ namespace ShoeStore.Controllers
 
             var address = await _addressService.GetAddressByIdAsync(addressId, userId);
             if (address == null)
-                return NotFound(new { message = $"Shipping address with ID {addressId} not found" });
+                return NotFound(new { message = $"Address with ID {addressId} not found" });
 
             return Ok(address);
         }
@@ -101,9 +101,9 @@ namespace ShoeStore.Controllers
 
             var result = await _addressService.DeleteAddressAsync(addressId, userId);
             if (!result)
-                return NotFound(new { message = $"Shipping address with ID {addressId} not found" });
+                return NotFound(new { message = $"Address with ID {addressId} not found" });
 
-            return Ok(new { message = "Shipping address deleted successfully" });
+            return Ok(new { message = "Address deleted successfully" });
         }
 
 
