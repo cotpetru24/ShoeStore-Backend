@@ -17,7 +17,7 @@ namespace ShoeStore.Dto.Order
 
         public CreateAddressRequestDto? BillingAddressRequest { get; set; }
 
-        public decimal ShippingCost { get; set; } = 0;
+        public decimal ShippingCost { get; set; }
 
         public decimal Discount { get; set; } = 0;
 

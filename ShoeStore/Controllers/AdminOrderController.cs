@@ -53,9 +53,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateOrderStatusAsync(int orderId, [FromBody] UpdateOrderStatusRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var success = await _adminOrderService.UpdateOrderStatusAsync(orderId, request);
             if (!success)
             {

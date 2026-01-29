@@ -53,14 +53,9 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateUserAsync(string userId, [FromBody] UpdateUserRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var success = await _adminUserService.UpdateUserAsync(userId, request);
             if (!success)
-            {
                 return NotFound(new { message = "User not found or update failed" });
-            }
 
             return Ok(new { message = "User updated successfully" });
         }
@@ -72,14 +67,9 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateUserAsync([FromBody] CreateUserRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var success = await _adminUserService.CreateUserAsync(request);
             if (!success)
-            {
                 return BadRequest(new { message = "Failed to create user" });
-            }
 
             return Ok(new { message = "User created successfully" });
         }
@@ -93,9 +83,7 @@ namespace ShoeStore.Controllers
         {
             var success = await _adminUserService.DeleteUserAsync(userId);
             if (!success)
-            {
                 return NotFound(new { message = "User not found" });
-            }
 
             return Ok(new { message = "User deleted successfully" });
         }
@@ -108,14 +96,9 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateUserPasswordAsync(string userId, [FromBody] UpdateUserPasswordRequestDto request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var success = await _adminUserService.UpdateUserPasswordAsync(userId, request);
             if (!success)
-            {
                 return NotFound(new { message = "User not found or password update failed" });
-            }
 
             return Ok(new { message = "User password updated successfully" });
         }

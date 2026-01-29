@@ -7,7 +7,7 @@ namespace ShoeStore.Dto.Order
     public class OrderDto
     {
         public int Id { get; set; }
-        public string? UserId { get; set; }
+        public string UserId { get; set; }
         public OrderStatusEnum OrderStatusId { get; set; }
         public string? OrderStatusName { get; set; }
         public decimal Subtotal { get; set; }
@@ -17,10 +17,10 @@ namespace ShoeStore.Dto.Order
         public AddressDto ShippingAddress { get; set; }
         public AddressDto BillingAddress { get; set; }
         public string? Notes { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
-        public PaymentDto? Payment { get; set; }
+        public PaymentDto Payment { get; set; }
     }
 }
 

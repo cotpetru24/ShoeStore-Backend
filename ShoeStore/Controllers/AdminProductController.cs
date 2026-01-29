@@ -72,9 +72,6 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<AdminProductDto>> CreateProductAsync([FromBody] AdminProductDto productToAdd)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var response = await _adminProductService.CreateProductAsync(productToAdd);
             if (response == null)
                 return BadRequest(new { message = "Failed to create the product" });
@@ -90,14 +87,9 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateProductAsync(int productId, [FromBody] AdminProductDto productToUpdate)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var success = await _adminProductService.UpdateProductAsync(productId, productToUpdate);
             if (!success)
-            {
                 return NotFound(new { message = "Product not found or update failed" });
-            }
 
             return Ok(new { message = "Product updated successfully" });
         }
@@ -111,9 +103,7 @@ namespace ShoeStore.Controllers
         {
             var success = await _adminProductService.DeleteProductAsync(productId);
             if (!success)
-            {
                 return NotFound(new { message = "Product not found" });
-            }
 
             return Ok(new { message = "Product deleted successfully" });
         }

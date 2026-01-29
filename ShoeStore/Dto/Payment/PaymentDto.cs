@@ -11,7 +11,7 @@ namespace ShoeStore.Dto.Payment
         public string? CardLast4 { get; set; }
         public string Status { get; set; } = null!;
         public string PaymentMethod { get; set; }
-        public string ReceiptUrl { get; set; }
+        public string? ReceiptUrl { get; set; }
     }
 
 

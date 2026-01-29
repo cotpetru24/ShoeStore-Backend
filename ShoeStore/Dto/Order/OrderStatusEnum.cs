@@ -1,9 +1,12 @@
 ﻿namespace ShoeStore.Dto.Order
 {
     // NOTE:
-    // - Processing can ONLY be set by payment webhook
-    // - Cancelled and Returned are terminal
-    // - PaymentFailed means no money was captured
+    // - Currently, Processing is set after verifying the PaymentIntent status with Stripe
+    //   during the backend order placement flow.
+    // - For production, this SHOULD !!!! be set only via a Stripe webhook
+    //   (payment_intent.succeeded) to handle async completion and recovery cases.
+    // - Cancelled and Returned are terminal states of an order.
+    // - PaymentFailed means no money was captured.
     public enum OrderStatusEnum
     {
         Processing = 2,

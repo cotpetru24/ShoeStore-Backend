@@ -7,7 +7,7 @@ public partial class OrderItem
 {
     public int Id { get; set; }
 
-    public int? OrderId { get; set; }
+    public int OrderId { get; set; }
 
     public decimal UnitPrice { get; set; }
 
@@ -19,7 +19,7 @@ public partial class OrderItem
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual Order? Order { get; set; }
+    public virtual Order Order { get; set; }
 
     public virtual ProductSize ProductSize { get; set; } = null!;
 }
