@@ -5,6 +5,7 @@ using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
+using ShoeStore.Dto.Payment;
 
 namespace ShoeStore.Services
 {

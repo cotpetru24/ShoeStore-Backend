@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Admin;
+using ShoeStore.Dto.Order;
 using ShoeStore.Dto.User;
 
 namespace ShoeStore.Services

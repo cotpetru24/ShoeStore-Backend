@@ -435,6 +435,7 @@ namespace ShoeStore.Services
             try
             {
                 var existingOrder = await _context.Orders
+                    .Include(o => o.Payment)
                 .Where(o => o.Id == orderId && o.UserId == userId)
                 .FirstOrDefaultAsync();
 
