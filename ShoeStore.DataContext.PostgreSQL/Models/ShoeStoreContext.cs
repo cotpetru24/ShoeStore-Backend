@@ -354,7 +354,6 @@ public partial class ShoeStoreContext : DbContext
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("order_items_order_id_fkey");
 
             entity.HasOne(d => d.ProductSize).WithMany(p => p.OrderItems)
@@ -368,6 +367,8 @@ public partial class ShoeStoreContext : DbContext
             entity.HasKey(e => e.Id).HasName("payments_pkey");
 
             entity.ToTable("payments");
+
+            entity.HasIndex(e => e.PaymentIntentId, "payments_payment_intent").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Amount)

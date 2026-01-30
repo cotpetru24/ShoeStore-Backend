@@ -19,7 +19,7 @@ public partial class OrderItem
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual Order Order { get; set; }
+    public virtual Order Order { get; set; } = null!;
 
     public virtual ProductSize ProductSize { get; set; } = null!;
 }
