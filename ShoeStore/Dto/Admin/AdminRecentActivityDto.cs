@@ -1,6 +1,6 @@
 ﻿namespace ShoeStore.Dto.Admin
 {
-    public class RecentActivityDto
+    public class AdminRecentActivityDto
     {
         public string Source { get; set; } = string.Empty;
         public string? UserGuid { get; set; }

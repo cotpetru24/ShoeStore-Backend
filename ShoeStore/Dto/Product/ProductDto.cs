@@ -7,7 +7,7 @@
         public string? Description { get; set; } = null;
         public decimal Price { get; set; }
         public decimal? OriginalPrice { get; set; } = null;
-        public int TotalStock { get; set; }
+        public int TotalStock => ProductSizes?.Sum(s => s.Stock) ?? 0;
         public string BrandName { get; set; } = string.Empty;
         public string Audience { get; set; } = string.Empty;
         public decimal? Rating { get; set; } = null;

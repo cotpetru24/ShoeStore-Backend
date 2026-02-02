@@ -17,15 +17,3 @@ namespace ShoeStore.Dto.User
         public string LastName { get; set; } = null!;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

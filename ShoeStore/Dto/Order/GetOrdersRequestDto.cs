@@ -4,27 +4,12 @@ namespace ShoeStore.Dto.Order
     {
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
-        public string? OrderStatus { get; set; }
+        public OrderStatusEnum? OrderStatus { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
-        public SortBy? SortBy { get; set; }
-        public SortDirection? SortDirection { get; set; }
+        public OrdersSortByEnum? SortBy { get; set; }
+        public SortDirectionEnum? SortDirection { get; set; }
     }
-
-
-    public enum SortBy
-    {
-        Date,
-        Total
-    }
-
-
-    public enum SortDirection
-    {
-        Ascending,
-        Descending
-    }
-
 }
 
 

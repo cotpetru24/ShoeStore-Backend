@@ -5,6 +5,8 @@ using ShoeStore.Services;
 using ShoeStore.Dto.Order;
 using Moq;
 using AutoMapper;
+using ShoeStore.Dto.Address;
+using ShoeStore.Dto;
 
 namespace ShoeStore.Tests
 {
@@ -46,23 +48,20 @@ namespace ShoeStore.Tests
                     new ProductSize { Id = 1, UkSize = 9, Stock = 5, Barcode = "BAR123", Sku = "1-9-BAR123" }
                 }
             };
-            var shippingAddress = new ShippingAddress
+            var shippingAddress = new UserAddress
             {
                 Id = 1,
                 UserId = "user1",
                 AddressLine1 = "123 Test St",
                 City = "Test City",
-                County = "Test County",
                 Postcode = "T123ST",
                 Country = "UK"
             };
-            var orderStatus = new OrderStatus { Id = 1, Code = "processing", DisplayName = "Processing" };
 
             context.Brands.Add(brand);
             context.Audiences.Add(audience);
             context.Products.Add(product);
-            context.ShippingAddresses.Add(shippingAddress);
-            context.OrderStatuses.Add(orderStatus);
+            context.UserAddresses.Add(shippingAddress);
             await context.SaveChangesAsync();
 
             var request = new PlaceOrderRequestDto
@@ -103,23 +102,20 @@ namespace ShoeStore.Tests
                 AudienceId = 1,
                 ProductSizes = new List<ProductSize> { productSize }
             };
-            var shippingAddress = new ShippingAddress
+            var shippingAddress = new UserAddress
             {
                 Id = 1,
                 UserId = "user1",
                 AddressLine1 = "123 Test St",
                 City = "Test City",
-                County = "Test County",
                 Postcode = "T123ST",
                 Country = "UK"
             };
-            var orderStatus = new OrderStatus { Id = 1, Code = "processing", DisplayName = "Processing" };
 
             context.Brands.Add(brand);
             context.Audiences.Add(audience);
             context.Products.Add(product);
-            context.ShippingAddresses.Add(shippingAddress);
-            context.OrderStatuses.Add(orderStatus);
+            context.UserAddresses.Add(shippingAddress);
             await context.SaveChangesAsync();
 
             var request = new PlaceOrderRequestDto
@@ -162,23 +158,20 @@ namespace ShoeStore.Tests
                     new ProductSize { Id = 1, UkSize = 9, Stock = 10, Barcode = "BAR123", Sku = "1-9-BAR123" }
                 }
             };
-            var shippingAddress = new ShippingAddress
+            var shippingAddress = new UserAddress
             {
                 Id = 1,
                 UserId = "user1",
                 AddressLine1 = "123 Test St",
                 City = "Test City",
-                County = "Test County",
                 Postcode = "T123ST",
                 Country = "UK"
             };
-            var orderStatus = new OrderStatus { Id = 1, Code = "processing", DisplayName = "Processing" };
 
             context.Brands.Add(brand);
             context.Audiences.Add(audience);
             context.Products.Add(product);
-            context.ShippingAddresses.Add(shippingAddress);
-            context.OrderStatuses.Add(orderStatus);
+            context.UserAddresses.Add(shippingAddress);
             await context.SaveChangesAsync();
 
             var request = new PlaceOrderRequestDto

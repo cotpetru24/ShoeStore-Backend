@@ -14,6 +14,7 @@ namespace ShoeStore.Services
             _context = injectedContext;
         }
 
+
         public async Task<GetProductsResponseDto> GetProductsAsync(GetProductsRequest request)
         {
             IQueryable<Product> products = _context.Products
@@ -48,27 +49,27 @@ namespace ShoeStore.Services
             switch (request.SortBy)
             {
 
-                case SortByOption.NameAsc:
+                case ProductSortByOption.NameAsc:
                     products = products.OrderBy(p => p.Name);
                     break;
 
-                case SortByOption.NameDesc:
+                case ProductSortByOption.NameDesc:
                     products = products.OrderByDescending(p => p.Name);
                     break;
 
-                case SortByOption.PriceAsc:
+                case ProductSortByOption.PriceAsc:
                     products = products.OrderBy(p => p.Price);
                     break;
 
-                case SortByOption.PriceDesc:
+                case ProductSortByOption.PriceDesc:
                     products = products.OrderByDescending(p => p.Price);
                     break;
 
-                case SortByOption.BrandAsc:
+                case ProductSortByOption.BrandAsc:
                     products = products.OrderBy(p => p.Brand.Name);
                     break;
 
-                case SortByOption.BrandDesc:
+                case ProductSortByOption.BrandDesc:
                     products = products.OrderByDescending(p => p.Brand.Name);
                     break;
 
@@ -103,7 +104,7 @@ namespace ShoeStore.Services
                     Price = p.Price,
                     Rating = p.Rating,
                     ReviewCount = p.ReviewCount,
-                    TotalStock = p.ProductSizes.Sum(s => (int?)s.Stock) ?? 0,
+
                     ProductImages = p.ProductImages
                         .OrderBy(img => img.SortOrder)
                         .Select(img => new ProductImageDto()
@@ -113,9 +114,9 @@ namespace ShoeStore.Services
                             IsPrimary = img.IsPrimary,
                             SortOrder = img.SortOrder,
                             ProductId = img.ProductId
-
                         })
                         .ToList(),
+
                     ProductSizes = p.ProductSizes
                         .OrderBy(size => size.UkSize)
                         .Select(size => new ProductSizeDto()
@@ -127,13 +128,13 @@ namespace ShoeStore.Services
                             Sku = size.Sku
                         })
                         .ToList(),
+
                     ProductFeatures = p.ProductFeatures
                         .Select(feature => new ProductFeatureDto()
                         {
                             Id = feature.Id,
                             FeatureText = feature.FeatureText,
                             SortOrder = feature.SortOrder
-
                         })
                         .ToList()
                 })
@@ -146,12 +147,11 @@ namespace ShoeStore.Services
             };
 
             return response;
-
         }
+
 
         public async Task<GetProductsResponseDto> GetFeaturedProductsAsync()
         {
-
             var products = _context.Products
                 .Where(p => p.IsActive == true && p.IsNew == true)
                 .Include(p => p.Brand)
@@ -180,7 +180,7 @@ namespace ShoeStore.Services
                     Price = p.Price,
                     Rating = p.Rating,
                     ReviewCount = p.ReviewCount,
-                    TotalStock = p.ProductSizes.Sum(s => (int?)s.Stock) ?? 0,
+
                     ProductImages = p.ProductImages
                         .OrderBy(img => img.SortOrder)
                         .Select(img => new ProductImageDto()
@@ -190,9 +190,9 @@ namespace ShoeStore.Services
                             IsPrimary = img.IsPrimary,
                             SortOrder = img.SortOrder,
                             ProductId = img.ProductId
-
                         })
                         .ToList(),
+
                     ProductSizes = p.ProductSizes
                         .OrderBy(size => size.UkSize)
                         .Select(size => new ProductSizeDto()
@@ -204,6 +204,7 @@ namespace ShoeStore.Services
                             Sku = size.Sku
                         })
                         .ToList(),
+
                     ProductFeatures = p.ProductFeatures
                         .Select(feature => new ProductFeatureDto()
                         {
@@ -223,8 +224,8 @@ namespace ShoeStore.Services
             };
 
             return response;
-
         }
+
 
         public async Task<GetSingleProductResponseDto?> GetProductByIdAsync(int productId)
         {
@@ -250,11 +251,8 @@ namespace ShoeStore.Services
                 DiscountPercentage = product.DiscountPercentage,
                 Rating = product.Rating,
                 ReviewCount = product.ReviewCount,
-
-                BrandName = product.Brand?.Name,
-                Audience = product.Audience?.DisplayName,
-
-                TotalStock = product.ProductSizes.Sum(s => (int?)s.Stock) ?? 0,
+                BrandName = product.Brand.Name,
+                Audience = product.Audience.DisplayName,
 
                 ProductImages = product.ProductImages
                     .OrderBy(i => i.SortOrder)
@@ -316,11 +314,8 @@ namespace ShoeStore.Services
                     DiscountPercentage = p.DiscountPercentage,
                     Rating = p.Rating,
                     ReviewCount = p.ReviewCount,
-
-                    BrandName = p.Brand?.Name,
-                    Audience = p.Audience?.DisplayName,
-
-                    TotalStock = p.ProductSizes.Sum(s => (int?)s.Stock) ?? 0,
+                    BrandName = p.Brand.Name,
+                    Audience = p.Audience.DisplayName,
 
                     ProductImages = p.ProductImages
                         .OrderBy(i => i.SortOrder)

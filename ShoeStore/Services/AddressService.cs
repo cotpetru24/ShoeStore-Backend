@@ -61,7 +61,7 @@ namespace ShoeStore.Services
         public async Task<List<AddressDto>> GetUserAddressesAsync(string userId)
         {
             var addresses = await _context.UserAddresses
-                .Where(a => a.UserId == userId)
+                .Where(a => a.UserId == userId && a.IsActive == true)
                 .ToListAsync();
 
             return addresses.Select(a => new AddressDto
@@ -83,7 +83,7 @@ namespace ShoeStore.Services
                 .FirstOrDefaultAsync();
 
             if (address == null)
-                throw new ArgumentException("Shipping address not found");
+                throw new ArgumentException("Address not found");
 
             address.AddressLine1 = request.AddressLine1;
             address.City = request.City;
@@ -95,7 +95,7 @@ namespace ShoeStore.Services
             return new CreateAddressResponseDto
             {
                 Id = address.Id,
-                Message = "Shipping address updated successfully",
+                Message = "Address updated successfully",
                 CreatedAt = DateTime.UtcNow
             };
         }
@@ -110,14 +110,8 @@ namespace ShoeStore.Services
             if (address == null)
                 return false;
 
-            // Check if address is being used in any orders
-            var isUsedInOrders = await _context.Orders
-                .AnyAsync(o => o.ShippingAddressId == addressId || o.BillingAddressId == addressId);
+            address.IsActive = false;
 
-            if (isUsedInOrders)
-                throw new InvalidOperationException("Cannot delete address that is being used in orders");
-
-            _context.UserAddresses.Remove(address);
             await _context.SaveChangesAsync();
 
             return true;

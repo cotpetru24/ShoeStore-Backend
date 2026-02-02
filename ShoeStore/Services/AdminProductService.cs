@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Product;
 
@@ -14,7 +15,8 @@ namespace ShoeStore.Services
             _context = context;
         }
 
-        public async Task<AdminProductListDto> GetProductsAsync(GetProductsRequestDto request)
+
+        public async Task<AdminProductListDto> GetProductsAsync(GetAdminProductsRequestDto request)
         {
             var query = _context.Products
                 .Include(p => p.Brand)
@@ -24,19 +26,20 @@ namespace ShoeStore.Services
                 .Include(p => p.ProductImages)
                 .AsQueryable();
 
-            // Apply filters
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
+                var term = $"%{request.SearchTerm}%";
+
                 query = query.Where(p =>
-                    EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%")
-                    || (p.Description != null &&
-                        EF.Functions.ILike(p.Description, $"%{request.SearchTerm}%"))
-                    || p.ProductSizes.Any(ps =>
+                    EF.Functions.ILike(p.Name, term) ||
+                    (p.Description != null &&
+                        EF.Functions.ILike(p.Description, term)) ||
+                    p.ProductSizes.Any(ps =>
                         ps.Barcode != null &&
-                        ps.Barcode.Contains(request.SearchTerm))
-                    || p.ProductFeatures.Any(pf =>
+                        EF.Functions.ILike(ps.Barcode, term)) ||
+                    p.ProductFeatures.Any(pf =>
                         pf.FeatureText != null &&
-                        pf.FeatureText.Contains(request.SearchTerm))
+                        EF.Functions.ILike(pf.FeatureText, term))
                 );
             }
 
@@ -57,27 +60,25 @@ namespace ShoeStore.Services
 
             if (request.ProductStockStatus != null)
             {
-                var productStockStatus = AdminProductEnumMappings.MapAdminProductStockStatus(request.ProductStockStatus);
-
-                switch (productStockStatus)
+                switch (request.ProductStockStatus)
                 {
-                    case AdminProductStockStatus.LowStock:
+                    case AdminProductStockStatusEnum.LowStock:
                         query = query.Where(p =>
                             p.ProductSizes.Sum(s => s.Stock) > 0 &&
                             p.ProductSizes.Sum(s => s.Stock) < 10);
                         break;
 
-                    case AdminProductStockStatus.HighStock:
+                    case AdminProductStockStatusEnum.HighStock:
                         query = query.Where(p =>
                             p.ProductSizes.Sum(s => s.Stock) > 50);
                         break;
 
-                    case AdminProductStockStatus.InStock:
+                    case AdminProductStockStatusEnum.InStock:
                         query = query.Where(p =>
                             p.ProductSizes.Sum(s => s.Stock) > 0);
                         break;
 
-                    case AdminProductStockStatus.OutOfStock:
+                    case AdminProductStockStatusEnum.OutOfStock:
                         query = query.Where(p =>
                             p.ProductSizes.Sum(s => s.Stock) <= 0);
                         break;
@@ -87,28 +88,25 @@ namespace ShoeStore.Services
                 }
             }
 
-            if (!string.IsNullOrEmpty(request.SortBy))
+            if (request.SortBy != null)
             {
-                var sortBy = AdminProductEnumMappings.MapAdminProductsSortBy(request.SortBy);
-                var direction = AdminProductEnumMappings.MapAdminProductsSortDirection(request.SortDirection);
-
-                switch (sortBy)
+                switch (request.SortBy)
                 {
-                    case AdminProductsSortBy.Name:
-                        query = direction == AdminProductsSortDirection.Ascending
+                    case AdminProductsSortByEnum.Name:
+                        query = request.SortDirection == SortDirectionEnum.Ascending
                             ? query.OrderBy(p => p.Name).ThenBy(p => p.Id)
                             : query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id);
                         break;
 
-                    case AdminProductsSortBy.Stock:
-                        query = direction == AdminProductsSortDirection.Ascending
+                    case AdminProductsSortByEnum.Stock:
+                        query = request.SortDirection == SortDirectionEnum.Ascending
                             ? query.OrderBy(p => p.ProductSizes.Sum(s => s.Stock)).ThenBy(p => p.Id)
                             : query.OrderByDescending(p => p.ProductSizes.Sum(s => s.Stock)).ThenByDescending(p => p.Id);
                         break;
 
-                    case AdminProductsSortBy.DateCreated:
+                    case AdminProductsSortByEnum.DateCreated:
                     default:
-                        query = direction == AdminProductsSortDirection.Ascending
+                        query = request.SortDirection == SortDirectionEnum.Ascending
                             ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
                             : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
                         break;
@@ -208,6 +206,7 @@ namespace ShoeStore.Services
             };
         }
 
+
         public async Task<List<AdminBrandDto>> GetProductBrandsAsync()
         {
             var allBrands = await _context.Brands
@@ -220,6 +219,7 @@ namespace ShoeStore.Services
 
             return allBrands;
         }
+
 
         public async Task<List<AdminAudienceDto>> GetProductAudienceAsync()
         {
@@ -234,6 +234,7 @@ namespace ShoeStore.Services
             return allAudience;
         }
 
+
         public async Task<AdminProductDto?> GetProductByIdAsync(int productId)
         {
             var product = await _context.Products
@@ -245,7 +246,7 @@ namespace ShoeStore.Services
 
             if (product == null) return null;
 
-            return new AdminProductDto
+            var respone = new AdminProductDto
             {
                 Id = product.Id,
                 Name = product.Name,
@@ -263,6 +264,8 @@ namespace ShoeStore.Services
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt,
                 IsActive = product.IsActive,
+                ProductImages = new List<ProductImageDto>(),
+
                 ProductSizes = product.ProductSizes.Select(ps => new ProductSizeDto
                 {
                     Id = ps.Id,
@@ -271,7 +274,7 @@ namespace ShoeStore.Services
                     Barcode = ps.Barcode,
                     Sku = ps.Sku
                 }).ToList(),
-                ProductImages = new List<ProductImageDto>(),
+
                 ProductFeatures = product.ProductFeatures.Select(pf => new ProductFeatureDto()
                 {
                     FeatureText = pf.FeatureText,
@@ -280,7 +283,10 @@ namespace ShoeStore.Services
                 })
                 .ToList()
             };
+
+            return respone;
         }
+
 
         public async Task<AdminProductDto> CreateProductAsync(AdminProductDto productToAdd)
         {
@@ -292,7 +298,7 @@ namespace ShoeStore.Services
                 BrandId = productToAdd.BrandId,
                 AudienceId = productToAdd.AudienceId,
                 DiscountPercentage = productToAdd.DiscountPercentage,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
                 IsNew = productToAdd.IsNew,
                 IsActive = productToAdd.IsActive
             };
@@ -313,16 +319,19 @@ namespace ShoeStore.Services
                 }
             }
 
-            foreach (var productSize in productToAdd.ProductSizes)
+            if (productToAdd.ProductSizes != null)
             {
-                _context.ProductSizes.Add(new ProductSize
+                foreach (var productSize in productToAdd.ProductSizes)
                 {
-                    ProductId = product.Id,
-                    UkSize = productSize.Size,
-                    Stock = productSize.Stock,
-                    Barcode = productSize.Barcode,
-                    Sku = $"{product.BrandId}-{productSize.Size}-{productSize.Barcode}"
-                });
+                    _context.ProductSizes.Add(new ProductSize
+                    {
+                        ProductId = product.Id,
+                        UkSize = productSize.Size,
+                        Stock = productSize.Stock,
+                        Barcode = productSize.Barcode,
+                        Sku = $"{product.BrandId}-{productSize.Size}-{productSize.Barcode}"
+                    });
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -345,6 +354,8 @@ namespace ShoeStore.Services
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt,
                 IsActive = product.IsActive,
+                ProductImages = new List<ProductImageDto>(),
+
                 ProductSizes = product.ProductSizes.Select(ps => new ProductSizeDto
                 {
                     Id = ps.Id,
@@ -353,7 +364,7 @@ namespace ShoeStore.Services
                     Barcode = ps.Barcode,
                     Sku = ps.Sku
                 }).ToList(),
-                ProductImages = new List<ProductImageDto>(),
+
                 ProductFeatures = product.ProductFeatures.Select(pf => new ProductFeatureDto()
                 {
                     FeatureText = pf.FeatureText,
@@ -362,8 +373,10 @@ namespace ShoeStore.Services
                 })
                 .ToList()
             };
+
             return response;
         }
+
 
         public async Task<bool> UpdateProductAsync(int productId, AdminProductDto productToUpdate)
         {
@@ -375,12 +388,12 @@ namespace ShoeStore.Services
             product.Description = productToUpdate.Description;
             product.Price = productToUpdate.Price;
             product.DiscountPercentage = productToUpdate.DiscountPercentage;
-            product.UpdatedAt = DateTime.Now;
+            product.UpdatedAt = DateTime.UtcNow;
             product.BrandId = productToUpdate.BrandId;
             product.AudienceId = productToUpdate.AudienceId;
 
             await _context.ProductFeatures
-                .Where(pf => pf.ProductId == productId)
+                .Where(pf => pf.ProductId == product.Id)
                 .ExecuteDeleteAsync();
 
             if (productToUpdate.ProductFeatures != null)
@@ -402,34 +415,35 @@ namespace ShoeStore.Services
 
             if (productToUpdate.ProductSizes != null)
             {
-                foreach (var incoming in productToUpdate.ProductSizes)
+                foreach (var productSize in productToUpdate.ProductSizes)
                 {
                     var existing = existingSizes
-                        .FirstOrDefault(s => s.UkSize == incoming.Size);
+                        .FirstOrDefault(s =>
+                            string.Equals(s.Barcode, productSize.Barcode, StringComparison.OrdinalIgnoreCase));
 
                     if (existing != null)
                     {
-                        existing.Stock = incoming.Stock;
+                        existing.Stock = productSize.Stock;
                     }
                     else
                     {
                         _context.ProductSizes.Add(new ProductSize
                         {
                             ProductId = product.Id,
-                            UkSize = incoming.Size,
-                            Stock = incoming.Stock,
-                            Barcode = incoming.Barcode,
-                            Sku = $"{productToUpdate.BrandId}-{incoming.Size}-{incoming.Barcode}"
+                            UkSize = productSize.Size,
+                            Stock = productSize.Stock,
+                            Barcode = productSize.Barcode,
+                            Sku = $"{productToUpdate.BrandId}-{productSize.Size}-{productSize.Barcode}"
                         });
                     }
                 }
 
                 var incomingSizes = productToUpdate.ProductSizes
-                    .Select(s => s.Size)
-                    .ToHashSet();
+                    .Select(s => s.Barcode)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 var sizesToDelete = existingSizes
-                    .Where(s => !incomingSizes.Contains(s.UkSize));
+                    .Where(s => !incomingSizes.Contains(s.Barcode));
 
                 _context.ProductSizes.RemoveRange(sizesToDelete);
             }
@@ -438,8 +452,10 @@ namespace ShoeStore.Services
             product.IsNew = productToUpdate.IsNew;
 
             await _context.SaveChangesAsync();
+
             return true;
         }
+
 
         public async Task<bool> DeleteProductAsync(int productId)
         {

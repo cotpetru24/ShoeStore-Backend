@@ -51,27 +51,13 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUserAsync(string userId, [FromBody] UpdateUserRequestDto request)
+        public async Task<IActionResult> UpdateUserAsync(string userId, [FromBody] AdminUpdateUserRequestDto request)
         {
             var success = await _adminUserService.UpdateUserAsync(userId, request);
             if (!success)
                 return NotFound(new { message = "User not found or update failed" });
 
             return Ok(new { message = "User updated successfully" });
-        }
-
-
-        [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateUserAsync([FromBody] CreateUserRequestDto request)
-        {
-            var success = await _adminUserService.CreateUserAsync(request);
-            if (!success)
-                return BadRequest(new { message = "Failed to create user" });
-
-            return Ok(new { message = "User created successfully" });
         }
 
 
@@ -94,7 +80,7 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUserPasswordAsync(string userId, [FromBody] UpdateUserPasswordRequestDto request)
+        public async Task<IActionResult> UpdateUserPasswordAsync(string userId, [FromBody] AdminUpdateUserPasswordRequestDto request)
         {
             var success = await _adminUserService.UpdateUserPasswordAsync(userId, request);
             if (!success)
@@ -105,10 +91,10 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet("{userId}/orders")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminOrderListDto))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminOrdersListDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetUserOrdersAsync(string userId, [FromQuery] GetUserOrdersRequestDto request)
+        public async Task<IActionResult> GetUserOrdersAsync(string userId, [FromQuery] GetAdminUserOrdersRequestDto request)
         {
             if (request.PageNumber < 1) request.PageNumber = 1;
             if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;

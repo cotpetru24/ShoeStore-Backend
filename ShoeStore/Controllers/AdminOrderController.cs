@@ -19,10 +19,10 @@ namespace ShoeStore.Controllers
 
 
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminOrderListDto))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminOrdersListDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<AdminOrderListDto>> GetOrdersAsync([FromQuery] GetAdminOrdersRequestDto request)
+        public async Task<ActionResult<AdminOrdersListDto>> GetOrdersAsync([FromQuery] GetAdminOrdersRequestDto request)
         {
             if (request.PageNumber < 1) request.PageNumber = 1;
             if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
@@ -51,7 +51,7 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateOrderStatusAsync(int orderId, [FromBody] UpdateOrderStatusRequestDto request)
+        public async Task<IActionResult> UpdateOrderStatusAsync(int orderId, [FromBody] AdminUpdateOrderStatusRequestDto request)
         {
             var success = await _adminOrderService.UpdateOrderStatusAsync(orderId, request);
             if (!success)

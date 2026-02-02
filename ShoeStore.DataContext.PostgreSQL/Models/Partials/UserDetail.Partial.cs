@@ -8,6 +8,7 @@ namespace ShoeStore.DataContext.PostgreSQL.Models
 {
     public partial class UserDetail
     {
+        // Double check if this navigation is needed
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 

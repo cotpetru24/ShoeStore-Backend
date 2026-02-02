@@ -26,14 +26,15 @@ namespace ShoeStore
 
             var isDevelopment = builder.Environment.IsDevelopment();
 
-            var connectionString = isDevelopment
-                ? builder.Configuration.GetConnectionString("ShoeStoreConnection")
-                : Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-                    ?? builder.Configuration.GetConnectionString("ShoeStoreConnection");
+            const string ConnKey = "ShoeStoreConnection";
 
-            if (string.IsNullOrEmpty(connectionString))
+            var connectionString =
+                builder.Configuration.GetConnectionString(ConnKey)
+                ?? Environment.GetEnvironmentVariable($"ConnectionStrings__{ConnKey}");
+
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new InvalidOperationException("Hey George, ffs,  the db connection stint is missing !!!!!");
+                throw new InvalidOperationException("Database connection string is not configured.");
             }
 
             builder.Services.AddDbContext<ShoeStoreContext>(options =>
@@ -105,8 +106,6 @@ namespace ShoeStore
                 });
             });
 
-
-            var test = Environment.GetEnvironmentVariable("Stripe__SecretKey");
 
             StripeConfiguration.ApiKey = Environment.GetEnvironmentVariable("Stripe__SecretKey");
 

@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
-using ShoeStore.Dto.Payment;
-using Stripe.Climate;
 using Order = ShoeStore.DataContext.PostgreSQL.Models.Order;
 
 namespace ShoeStore.Services
@@ -16,17 +15,15 @@ namespace ShoeStore.Services
         private readonly ShoeStoreContext _context;
         private readonly PaymentService _paymentService;
 
-        public AdminOrderService(
-            UserManager<IdentityUser> userManager,
-            ShoeStoreContext context,
-            PaymentService paymentService)
+        public AdminOrderService(UserManager<IdentityUser> userManager, ShoeStoreContext context, PaymentService paymentService)
         {
             _userManager = userManager;
             _context = context;
             _paymentService = paymentService;
         }
 
-        public async Task<AdminOrderListDto> GetOrdersAsync(GetAdminOrdersRequestDto request)
+
+        public async Task<AdminOrdersListDto> GetOrdersAsync(GetAdminOrdersRequestDto request)
         {
             var query = _context.Orders
                 .Include(o => o.ShippingAddress)
@@ -36,22 +33,20 @@ namespace ShoeStore.Services
                     .ThenInclude(p => p.Product)
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payment)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
                 .AsQueryable();
 
-            // Apply filters
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                var term = request.SearchTerm.ToLower();
+                var term = $"%{request.SearchTerm}%";
 
                 query = query.Where(o =>
-                    o.Id.ToString().Contains(term) ||
+                    EF.Functions.ILike(o.Id.ToString(), term) ||
                     (o.UserDetail != null && (
-                        ((o.UserDetail.FirstName + " " + o.UserDetail.LastName).ToLower().Contains(term)) ||
+                        EF.Functions.ILike(o.UserDetail.FirstName + " " + o.UserDetail.LastName, term) ||
                         (o.UserDetail.AspNetUser != null &&
-                         o.UserDetail.AspNetUser.Email.ToLower().Contains(term))
+                         EF.Functions.ILike(o.UserDetail.AspNetUser.Email, term))
                     ))
                 );
             }
@@ -71,7 +66,6 @@ namespace ShoeStore.Services
                 query = query.Where(o => o.CreatedAt <= request.ToDate);
             }
 
-            // Apply sorting
             var sortBy = request.SortBy;
             var sortDir = request.SortDirection;
 
@@ -79,20 +73,20 @@ namespace ShoeStore.Services
 
             switch (sortBy)
             {
-                case AdminOrderSortBy.Total:
-                    sortedQuery = sortDir == AdminOrderSortDirection.Ascending
+                case OrdersSortByEnum.Total:
+                    sortedQuery = sortDir == SortDirectionEnum.Ascending
                         ? query.OrderBy(o => o.Total)
                         : query.OrderByDescending(o => o.Total);
                     break;
 
-                case AdminOrderSortBy.DateCreated:
-                    sortedQuery = sortDir == AdminOrderSortDirection.Ascending
+                case OrdersSortByEnum.Date:
+                    sortedQuery = sortDir == SortDirectionEnum.Ascending
                         ? query.OrderBy(o => o.CreatedAt)
                         : query.OrderByDescending(o => o.CreatedAt);
                     break;
 
                 default:
-                    sortedQuery = sortDir == AdminOrderSortDirection.Ascending
+                    sortedQuery = sortDir == SortDirectionEnum.Ascending
                         ? query.OrderBy(o => o.CreatedAt)
                         : query.OrderByDescending(o => o.CreatedAt);
                     break;
@@ -110,7 +104,6 @@ namespace ShoeStore.Services
 
             var adminOrders = new List<AdminOrderDto>();
 
-            // Populate order information
             foreach (var order in orders)
             {
                 var user = await _userManager.FindByIdAsync(order.UserId!);
@@ -130,9 +123,7 @@ namespace ShoeStore.Services
                 {
                     Id = order.Payment.Id,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
-                    PaymentStatus = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString(),
-
-
+                    PaymentStatus = (PaymentStatusEnum)order.Payment.PaymentStatus,
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt
@@ -144,8 +135,7 @@ namespace ShoeStore.Services
                     UserId = order.UserId!,
                     UserEmail = user?.Email ?? "",
                     UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                    OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
-                    OrderStatusCode = order.OrderStatus.ToString(),
+                    OrderStatus = (OrderStatusEnum)order.OrderStatus,
                     Subtotal = order.Subtotal,
                     ShippingCost = order.ShippingCost,
                     Discount = order.Discount,
@@ -175,25 +165,25 @@ namespace ShoeStore.Services
             }
 
             var totalOrdersCount = await _context.Orders.CountAsync();
-            var totalPendingOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus == 1)
+            var totalShippedOrdersCount = await _context.Orders
+                .Where(o => o.OrderStatus == (int)OrderStatusEnum.Shipped)
                 .CountAsync();
             var totalProcessingOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus == 2)
+                .Where(o => o.OrderStatus == (int)OrderStatusEnum.Processing)
                 .CountAsync();
             var totalDeliveredOrdersCount = await _context.Orders
-                .Where(o => o.OrderStatus == 4)
+                .Where(o => o.OrderStatus == (int)OrderStatusEnum.Delivered)
                 .CountAsync();
 
             var stats = new AdminOrdersStatsDto()
             {
                 TotalOrdersCount = totalOrdersCount,
-                TotalPendingOrdersCount = totalPendingOrdersCount,
+                TotalShippedOrdersCount = totalShippedOrdersCount,
                 TotalProcessingOrdersCount = totalProcessingOrdersCount,
                 TotalDeliveredOrdersCount = totalDeliveredOrdersCount
             };
 
-            return new AdminOrderListDto
+            return new AdminOrdersListDto
             {
                 AdminOrdersStats = stats,
                 Orders = adminOrders,
@@ -204,13 +194,13 @@ namespace ShoeStore.Services
             };
         }
 
+
         public async Task<AdminOrderDto?> GetOrderByIdAsync(int orderId)
         {
             var order = await _context.Orders
-                .Include(o => o.OrderStatus)
-                          .Include(o => o.ShippingAddress)
-                          .Include(o => o.UserDetail)
+                .Include(o => o.ShippingAddress)
                 .Include(o => o.BillingAddress)
+                .Include(o => o.UserDetail)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
@@ -223,8 +213,6 @@ namespace ShoeStore.Services
 
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payment)
-                    .ThenInclude(s => s.PaymentStatus)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null) return null;
@@ -239,8 +227,7 @@ namespace ShoeStore.Services
                 UserId = order.UserId!,
                 UserEmail = user?.Email ?? "",
                 UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
-                OrderStatusCode = (order.OrderStatus).ToString(),
+                OrderStatus = (OrderStatusEnum)order.OrderStatus,
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
@@ -248,6 +235,7 @@ namespace ShoeStore.Services
                 Notes = order.Notes,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
+
                 ShippingAddress = order.ShippingAddress != null ? new AddressDto
                 {
                     Id = order.ShippingAddress.Id,
@@ -256,6 +244,7 @@ namespace ShoeStore.Services
                     Postcode = order.ShippingAddress.Postcode,
                     Country = order.ShippingAddress.Country,
                 } : null,
+
                 BillingAddress = order.BillingAddress != null ? new AddressDto
                 {
                     Id = order.BillingAddress.Id,
@@ -264,6 +253,7 @@ namespace ShoeStore.Services
                     Postcode = order.BillingAddress.Postcode,
                     Country = order.BillingAddress.Country,
                 } : null,
+
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
@@ -276,13 +266,13 @@ namespace ShoeStore.Services
                     MainImage = oi.ProductSize.Product.ProductImages
                         .Select(pi => pi.ImagePath)
                         .FirstOrDefault(),
-
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
+
                 Payment = new AdminPaymentDto
                 {
                     Id = order.Payment.Id,
-                    PaymentStatus = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString(),
+                    PaymentStatus = (PaymentStatusEnum)order.Payment.PaymentStatus,
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt,
@@ -296,7 +286,8 @@ namespace ShoeStore.Services
             return response;
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(int orderId, UpdateOrderStatusRequestDto request)
+
+        public async Task<bool> UpdateOrderStatusAsync(int orderId, AdminUpdateOrderStatusRequestDto request)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
@@ -318,7 +309,6 @@ namespace ShoeStore.Services
                 }
 
 
-                // Conditions for current status == cancelled || returned
                 if (order.OrderStatus == (int)OrderStatusEnum.Cancelled ||
                     order.OrderStatus == (int)OrderStatusEnum.Returned)
                 {
@@ -326,40 +316,38 @@ namespace ShoeStore.Services
                 }
 
                 //Conditions for request status == processing
-                if (request.OrderStatusId == (int)OrderStatusEnum.Processing)
+                if (request.Status == OrderStatusEnum.Processing)
                 {
                     throw new InvalidOperationException(
                         "Order status 'Processing' can only be set by the payment system."
                     );
                 }
 
-
-                // Conditions forcurrent status == processing
+                // Conditions for current status == processing
                 if (order.OrderStatus == (int)OrderStatusEnum.Processing &&
-                    request.OrderStatusId != (int)OrderStatusEnum.Shipped &&
-                    request.OrderStatusId != (int)OrderStatusEnum.Cancelled)
+                    request.Status != OrderStatusEnum.Shipped &&
+                    request.Status != OrderStatusEnum.Cancelled)
                 {
                     throw new InvalidOperationException("Invalid status transition from Processing.");
                 }
 
                 // Conditions for current status == shipped
                 if (order.OrderStatus == (int)OrderStatusEnum.Shipped &&
-                    request.OrderStatusId != (int)OrderStatusEnum.Delivered)
+                    request.Status != OrderStatusEnum.Delivered)
                 {
                     throw new InvalidOperationException("Invalid status transition from Shipped.");
                 }
 
                 // Conditions for current status == delivered
-                if (request.OrderStatusId == (int)OrderStatusEnum.Returned &&
+                if (request.Status == OrderStatusEnum.Returned &&
                     order.OrderStatus != (int)OrderStatusEnum.Delivered)
                 {
                     throw new InvalidOperationException("Order can be returned only if it has been delivered.");
                 }
 
-
                 // If cancelling or returned => refund
-                if ((request.OrderStatusId == (int)OrderStatusEnum.Cancelled ||
-                    request.OrderStatusId == (int)OrderStatusEnum.Returned) &&
+                if ((request.Status == OrderStatusEnum.Cancelled ||
+                    request.Status == OrderStatusEnum.Returned) &&
                     order.Payment.PaymentStatus != (int)PaymentStatusEnum.Refunded)
                 {
                     var refundResult = await _paymentService.RefundPayment(order.Payment.PaymentIntentId);
@@ -371,7 +359,7 @@ namespace ShoeStore.Services
                     }
                 }
 
-                order.OrderStatus = request.OrderStatusId;
+                order.OrderStatus = (int)request.Status;
                 order.UpdatedAt = DateTime.UtcNow;
 
                 if (!string.IsNullOrEmpty(request.Notes))

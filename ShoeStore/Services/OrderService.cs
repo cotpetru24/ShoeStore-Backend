@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
@@ -39,7 +40,6 @@ namespace ShoeStore.Services
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
-
             try
             {
                 var payment = await _paymentService.StorePaymentDetails(request.PaymentIntentId);
@@ -49,8 +49,6 @@ namespace ShoeStore.Services
                 orderCommitted = true;
 
                 return order;
-
-
             }
             catch
             {
@@ -72,10 +70,8 @@ namespace ShoeStore.Services
         }
 
 
-
         public async Task<PlaceOrderResponseDto> CreateOrderAsync(PlaceOrderRequestDto request, string userId, string paymentIntentId)
         {
-
             decimal subtotal = 0;
             var orderItems = new List<OrderItem>();
 
@@ -100,7 +96,7 @@ namespace ShoeStore.Services
                         $"Insufficient stock for product {product.Name}, size {item.ProductSizeBarcode}. " +
                         $"Available: {productSize.Stock}, Requested: {item.Quantity}");
 
-                // Reduce stock at SIZE level
+                // Reduce SIZE STOCK
                 productSize.Stock -= item.Quantity;
 
                 var orderItem = new OrderItem
@@ -108,11 +104,6 @@ namespace ShoeStore.Services
                     UnitPrice = product.Price,
                     Quantity = item.Quantity,
                     CreatedAt = DateTime.UtcNow,
-
-
-
-
-                    //--------- amend the front end to send the ProductSizeId instead of Size -----------
                     ProductSizeId = product.ProductSizes.First(ps => ps.Barcode == item.ProductSizeBarcode).Id
                 };
 
@@ -120,7 +111,6 @@ namespace ShoeStore.Services
                 subtotal += product.Price * item.Quantity;
             }
 
-            // Validate shipping address
             var shippingAddress = await _context.UserAddresses
                 .FirstOrDefaultAsync(a =>
                     a.Id == request.ShippingAddressId &&
@@ -129,7 +119,6 @@ namespace ShoeStore.Services
             if (shippingAddress == null)
                 throw new ArgumentException("Invalid shipping address");
 
-            // Billing address
             UserAddress? billingAddress = null;
 
             if (!request.BillingAddressSameAsShipping)
@@ -153,7 +142,7 @@ namespace ShoeStore.Services
                 .Where(p => p.PaymentIntentId == paymentIntentId)
                 .Select(p => p.Id)
                 .FirstOrDefaultAsync();
-                
+
 
             var order = new DataContext.PostgreSQL.Models.Order
             {
@@ -188,36 +177,27 @@ namespace ShoeStore.Services
                 Total = order.Total,
                 CreatedAt = order.CreatedAt
             };
-
         }
 
 
         public async Task<OrderDto?> GetOrderByIdAsync(int orderId, string userId)
         {
-
-
             var order = await _context.Orders
                 .Where(o => o.Id == orderId && o.UserId == userId)
-                          .Include(o => o.ShippingAddress)
-                          .Include(o => o.UserDetail)
+                .Include(o => o.ShippingAddress)
+                .Include(o => o.UserDetail)
                 .Include(o => o.BillingAddress)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
                         .ThenInclude(p => p.Brand)
-
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
                         .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
-
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payment)
-                .FirstOrDefaultAsync(o => o.Id == orderId);
-
-
-
+                .FirstOrDefaultAsync();
 
             if (order == null)
                 return null;
@@ -270,7 +250,6 @@ namespace ShoeStore.Services
                     MainImage = oi.ProductSize.Product.ProductImages
                         .Select(pi => pi.ImagePath)
                         .FirstOrDefault(),
-
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
 
@@ -288,43 +267,31 @@ namespace ShoeStore.Services
             };
 
             return response;
-
-
         }
+
 
         public async Task<GetOrdersResponseDto> GetOrdersAsync(GetOrdersRequestDto request, string userId)
         {
-            //var query = _context.Orders
-            //    .Where(o => o.UserId == userId)
-            //    .Include(o => o.OrderStatus)
-            //    .Include(o => o.OrderItems)
-            //    .AsQueryable();
-
-
             var query = _context.Orders
                 .Where(o => o.UserId == userId)
-                          .Include(o => o.ShippingAddress)
-                          .Include(o => o.BillingAddress)
-                          .Include(o => o.UserDetail)
+                .Include(o => o.ShippingAddress)
+                .Include(o => o.BillingAddress)
+                .Include(o => o.UserDetail)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
                         .ThenInclude(p => p.Brand)
-
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductSize)
                     .ThenInclude(ps => ps.Product)
                         .ThenInclude(p => p.ProductImages.Where(pi => pi.IsPrimary))
-
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payment)
                 .AsQueryable();
 
-            // Apply filters
-            if (!string.IsNullOrEmpty(request.OrderStatus))
+            if (request.OrderStatus != null)
             {
-                query = query.Where(o => o.OrderStatus != null && ((OrderStatusEnum)o.OrderStatus).ToString() == request.OrderStatus);
+                query = query.Where(o => o.OrderStatus != null && o.OrderStatus == (int)request.OrderStatus);
             }
 
             if (request.FromDate.HasValue)
@@ -337,12 +304,10 @@ namespace ShoeStore.Services
                 query = query.Where(o => o.CreatedAt <= request.ToDate.Value);
             }
 
-            // Get total count
             var totalCount = await query.CountAsync();
 
-            // Apply pagination
             request.Page = request.Page < 1 ? 1 : request.Page;
-            request.PageSize = request.PageSize < 1 ? 10 : request.PageSize;
+            request.PageSize = request.PageSize < 1 ? 30 : request.PageSize;
 
             var orders = await query
                 .OrderByDescending(o => o.CreatedAt)
@@ -350,7 +315,7 @@ namespace ShoeStore.Services
                 .Take(request.PageSize)
                 .ToListAsync();
 
-            var orderDtos = orders.Select(order => new OrderDto()
+            var order = orders.Select(order => new OrderDto()
             {
                 Id = order.Id,
                 UserId = order.UserId,
@@ -400,7 +365,6 @@ namespace ShoeStore.Services
                     MainImage = oi.ProductSize.Product.ProductImages
                         .Select(pi => pi.ImagePath)
                         .FirstOrDefault(),
-
                     Size = oi.ProductSize.UkSize.ToString()
                 }).ToList(),
 
@@ -420,13 +384,14 @@ namespace ShoeStore.Services
 
             return new GetOrdersResponseDto
             {
-                Orders = orderDtos,
+                Orders = order,
                 TotalCount = totalCount,
                 Page = request.Page,
                 PageSize = request.PageSize,
                 TotalPages = totalPages
             };
         }
+
 
         public async Task<OrderDto?> CancelOrder(int orderId, string userId)
         {
@@ -435,14 +400,14 @@ namespace ShoeStore.Services
             try
             {
                 var existingOrder = await _context.Orders
-                    .Include(o => o.Payment)
                 .Where(o => o.Id == orderId && o.UserId == userId)
+                .Include(o => o.Payment)
                 .FirstOrDefaultAsync();
 
                 if (existingOrder == null
                     || existingOrder.OrderStatus != (int)OrderStatusEnum.Processing)
                 {
-                    throw new InvalidOperationException("Invalid status transition from Shipped.");
+                    throw new InvalidOperationException("Invalid status transition.");
                 }
 
                 existingOrder.OrderStatus = (int)OrderStatusEnum.Cancelled;

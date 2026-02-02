@@ -1,8 +1,6 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
 using ShoeStore.Dto.Cms;
-using System.Linq;
 
 namespace ShoeStore.Services
 {
@@ -13,7 +11,6 @@ namespace ShoeStore.Services
         public CmsService(ShoeStoreContext context)
         {
             _context = context;
-
         }
 
 
@@ -141,40 +138,36 @@ namespace ShoeStore.Services
 
                 await _context.SaveChangesAsync();
             }
-
         }
-
-
-
 
 
         public async Task<CmsNavAndFooterDto> GetCmsNavAndFooterAsync()
         {
             var activeProfile = await _context.CmsProfiles.FirstOrDefaultAsync(p => p.IsActive);
-
+            if (activeProfile == null)
+                throw new Exception("No active profile found");
 
             return new CmsNavAndFooterDto()
             {
                 FooterBgColor = activeProfile.FooterBg,
                 FooterLinkColor = activeProfile.FooterLink,
                 FooterTextColor = activeProfile.FooterText,
-
                 NavbarBgColor = activeProfile.NavbarBg,
                 NavbarLinkColor = activeProfile.NavbarLink,
                 NavbarTextColor = activeProfile.NavbarText,
-
                 WebsiteName = activeProfile.SiteName,
                 WebsiteLogo = activeProfile.LogoBase64,
                 ShowLogo = activeProfile.ShowLogoInHeader,
-
                 Favicon = activeProfile.FaviconBase64
             };
         }
 
 
-        internal async Task<CmsLandingPageDto> GetCmsLandingPageAsync()
+        public async Task<CmsLandingPageDto> GetCmsLandingPageAsync()
         {
             var activeProfile = await _context.CmsProfiles.FirstOrDefaultAsync(p => p.IsActive);
+            if (activeProfile == null)
+                throw new Exception("No active profile found");
 
             var features = await _context.CmsFeatures
                 .Where(f => f.ProfileId == activeProfile.Id)
@@ -200,7 +193,6 @@ namespace ShoeStore.Services
                     Id = c.Id,
                     ImageBase64 = c.ImageBase64,
                     ItemTagline = c.ItemTagline,
-
                 })
                 .ToListAsync();
 
@@ -208,24 +200,20 @@ namespace ShoeStore.Services
             {
                 WebsiteName = activeProfile.SiteName,
                 Tagline = activeProfile.Tagline,
-
                 LogoBase64 = activeProfile.LogoBase64,
                 FaviconBase64 = activeProfile.LogoBase64,
-
                 HeroBackgroundImageBase64 = activeProfile.HeroBgBase64,
                 HeroDescription = activeProfile.HeroDescription,
                 HeroPrimaryButtonText = activeProfile.HeroPrimaryBtn,
                 HeroSecondaryButtonText = activeProfile.HeroSecondaryBtn,
                 HeroSubtitle = activeProfile.HeroSubtitle,
                 HeroTitle = activeProfile.HeroTitle,
-
                 ShowLogoInHeader = activeProfile.ShowLogoInHeader,
-
                 Features = features,
                 Categories = categories
-
             };
         }
+
 
         public async Task<List<CmsStoredProfileDto>> GetCmsProfilesAsync()
         {
@@ -242,6 +230,7 @@ namespace ShoeStore.Services
                 .OrderByDescending(p => p.LastModified)
                 .ToListAsync();
         }
+
 
         public async Task<CmsProfileDto> GetCmsProfileByIdAsync(int id)
         {
@@ -306,30 +295,31 @@ namespace ShoeStore.Services
             };
         }
 
-        public async Task<CmsProfileDto> CreateCmsProfileAsync(CmsProfileDto dto)
+
+        public async Task<CmsProfileDto> CreateCmsProfileAsync(CmsProfileDto profileToCreate)
         {
             var profile = new CmsProfile()
             {
-                Name = dto.ProfileName,
+                Name = profileToCreate.ProfileName,
                 IsActive = false,
                 IsDefault = false,
-                SiteName = dto.WebsiteName,
-                Tagline = dto.Tagline,
-                LogoBase64 = dto.LogoBase64,
-                FaviconBase64 = dto.FaviconBase64,
-                ShowLogoInHeader = dto.ShowLogoInHeader,
-                NavbarBg = dto.NavbarBgColor,
-                NavbarText = dto.NavbarTextColor,
-                NavbarLink = dto.NavbarLinkColor,
-                FooterBg = dto.FooterBgColor,
-                FooterText = dto.FooterTextColor,
-                FooterLink = dto.FooterLinkColor,
-                HeroTitle = dto.HeroTitle,
-                HeroSubtitle = dto.HeroSubtitle,
-                HeroDescription = dto.HeroDescription,
-                HeroPrimaryBtn = dto.HeroPrimaryButtonText,
-                HeroSecondaryBtn = dto.HeroSecondaryButtonText,
-                HeroBgBase64 = dto.HeroBackgroundImageBase64,
+                SiteName = profileToCreate.WebsiteName,
+                Tagline = profileToCreate.Tagline,
+                LogoBase64 = profileToCreate.LogoBase64,
+                FaviconBase64 = profileToCreate.FaviconBase64,
+                ShowLogoInHeader = profileToCreate.ShowLogoInHeader,
+                NavbarBg = profileToCreate.NavbarBgColor,
+                NavbarText = profileToCreate.NavbarTextColor,
+                NavbarLink = profileToCreate.NavbarLinkColor,
+                FooterBg = profileToCreate.FooterBgColor,
+                FooterText = profileToCreate.FooterTextColor,
+                FooterLink = profileToCreate.FooterLinkColor,
+                HeroTitle = profileToCreate.HeroTitle,
+                HeroSubtitle = profileToCreate.HeroSubtitle,
+                HeroDescription = profileToCreate.HeroDescription,
+                HeroPrimaryBtn = profileToCreate.HeroPrimaryButtonText,
+                HeroSecondaryBtn = profileToCreate.HeroSecondaryButtonText,
+                HeroBgBase64 = profileToCreate.HeroBackgroundImageBase64,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -339,24 +329,25 @@ namespace ShoeStore.Services
 
             var profileId = profile.Id;
 
-            if (dto.Features != null && dto.Features.Any())
+            if (profileToCreate.Features != null && profileToCreate.Features.Any())
             {
-                var features = dto.Features.Select(f => new CmsFeature()
+                var features = profileToCreate.Features.Select(f => new CmsFeature()
                 {
                     ProfileId = profileId,
                     IconClass = f.IconClass,
                     Title = f.Title,
                     Description = f.Description,
                     SortOrder = f.SortOrder,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 }).ToList();
 
                 await _context.CmsFeatures.AddRangeAsync(features);
             }
 
-            if (dto.Categories != null && dto.Categories.Any())
+            if (profileToCreate.Categories != null && profileToCreate.Categories.Any())
             {
-                var categories = dto.Categories.Select(c => new CmsCategory()
+                var categories = profileToCreate.Categories.Select(c => new CmsCategory()
                 {
                     ProfileId = profileId,
                     Title = c.Title,
@@ -364,7 +355,8 @@ namespace ShoeStore.Services
                     ImageBase64 = c.ImageBase64,
                     ItemTagline = c.ItemTagline,
                     SortOrder = c.SortOrder,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 }).ToList();
 
                 await _context.CmsCategories.AddRangeAsync(categories);
@@ -375,44 +367,45 @@ namespace ShoeStore.Services
             return await GetCmsProfileByIdAsync(profileId);
         }
 
-        public async Task<CmsProfileDto> UpdateCmsProfileAsync(CmsProfileDto dto)
+
+        public async Task<CmsProfileDto> UpdateCmsProfileAsync(CmsProfileDto updatedProfile)
         {
-            var profile = await _context.CmsProfiles
+            var profileToUpdate = await _context.CmsProfiles
                 .Include(p => p.CmsFeatures)
                 .Include(p => p.CmsCategories)
-                .FirstOrDefaultAsync(p => p.Id == dto.Id);
+                .FirstOrDefaultAsync(p => p.Id == updatedProfile.Id);
 
-            if (profile == null)
-                throw new KeyNotFoundException($"CMS profile with ID {dto.Id} not found.");
+            if (profileToUpdate == null)
+                throw new KeyNotFoundException($"CMS profile with ID {updatedProfile.Id} not found.");
 
-            profile.Name = dto.ProfileName;
-            profile.SiteName = dto.WebsiteName;
-            profile.Tagline = dto.Tagline;
-            profile.LogoBase64 = dto.LogoBase64;
-            profile.FaviconBase64 = dto.FaviconBase64;
-            profile.ShowLogoInHeader = dto.ShowLogoInHeader;
-            profile.NavbarBg = dto.NavbarBgColor;
-            profile.NavbarText = dto.NavbarTextColor;
-            profile.NavbarLink = dto.NavbarLinkColor;
-            profile.FooterBg = dto.FooterBgColor;
-            profile.FooterText = dto.FooterTextColor;
-            profile.FooterLink = dto.FooterLinkColor;
-            profile.HeroTitle = dto.HeroTitle;
-            profile.HeroSubtitle = dto.HeroSubtitle;
-            profile.HeroDescription = dto.HeroDescription;
-            profile.HeroPrimaryBtn = dto.HeroPrimaryButtonText;
-            profile.HeroSecondaryBtn = dto.HeroSecondaryButtonText;
-            profile.HeroBgBase64 = dto.HeroBackgroundImageBase64;
-            profile.UpdatedAt = DateTime.UtcNow;
+            profileToUpdate.Name = updatedProfile.ProfileName;
+            profileToUpdate.SiteName = updatedProfile.WebsiteName;
+            profileToUpdate.Tagline = updatedProfile.Tagline;
+            profileToUpdate.LogoBase64 = updatedProfile.LogoBase64;
+            profileToUpdate.FaviconBase64 = updatedProfile.FaviconBase64;
+            profileToUpdate.ShowLogoInHeader = updatedProfile.ShowLogoInHeader;
+            profileToUpdate.NavbarBg = updatedProfile.NavbarBgColor;
+            profileToUpdate.NavbarText = updatedProfile.NavbarTextColor;
+            profileToUpdate.NavbarLink = updatedProfile.NavbarLinkColor;
+            profileToUpdate.FooterBg = updatedProfile.FooterBgColor;
+            profileToUpdate.FooterText = updatedProfile.FooterTextColor;
+            profileToUpdate.FooterLink = updatedProfile.FooterLinkColor;
+            profileToUpdate.HeroTitle = updatedProfile.HeroTitle;
+            profileToUpdate.HeroSubtitle = updatedProfile.HeroSubtitle;
+            profileToUpdate.HeroDescription = updatedProfile.HeroDescription;
+            profileToUpdate.HeroPrimaryBtn = updatedProfile.HeroPrimaryButtonText;
+            profileToUpdate.HeroSecondaryBtn = updatedProfile.HeroSecondaryButtonText;
+            profileToUpdate.HeroBgBase64 = updatedProfile.HeroBackgroundImageBase64;
+            profileToUpdate.UpdatedAt = DateTime.UtcNow;
 
-            _context.CmsFeatures.RemoveRange(profile.CmsFeatures);
-            _context.CmsCategories.RemoveRange(profile.CmsCategories);
+            _context.CmsFeatures.RemoveRange(profileToUpdate.CmsFeatures);
+            _context.CmsCategories.RemoveRange(profileToUpdate.CmsCategories);
 
-            if (dto.Features != null && dto.Features.Any())
+            if (updatedProfile.Features != null && updatedProfile.Features.Any())
             {
-                var features = dto.Features.Select(f => new CmsFeature()
+                var features = updatedProfile.Features.Select(f => new CmsFeature()
                 {
-                    ProfileId = profile.Id,
+                    ProfileId = profileToUpdate.Id,
                     IconClass = f.IconClass,
                     Title = f.Title,
                     Description = f.Description,
@@ -423,11 +416,11 @@ namespace ShoeStore.Services
                 await _context.CmsFeatures.AddRangeAsync(features);
             }
 
-            if (dto.Categories != null && dto.Categories.Any())
+            if (updatedProfile.Categories != null && updatedProfile.Categories.Any())
             {
-                var categories = dto.Categories.Select(c => new CmsCategory()
+                var categories = updatedProfile.Categories.Select(c => new CmsCategory()
                 {
-                    ProfileId = profile.Id,
+                    ProfileId = profileToUpdate.Id,
                     Title = c.Title,
                     Description = c.Description,
                     ImageBase64 = c.ImageBase64,
@@ -441,39 +434,41 @@ namespace ShoeStore.Services
 
             await _context.SaveChangesAsync();
 
-            return await GetCmsProfileByIdAsync(profile.Id);
+            return await GetCmsProfileByIdAsync(profileToUpdate.Id);
         }
+
 
         public async Task<bool> DeleteCmsProfileAsync(int id)
         {
-            var profile = await _context.CmsProfiles
+            var profileToDelete = await _context.CmsProfiles
                 .Include(p => p.CmsFeatures)
                 .Include(p => p.CmsCategories)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (profile == null)
+            if (profileToDelete == null)
                 return false;
 
-            if (profile.IsDefault)
+            if (profileToDelete.IsDefault)
                 throw new InvalidOperationException("Cannot delete the default profile.");
 
-            if (profile.IsActive)
+            if (profileToDelete.IsActive)
                 throw new InvalidOperationException("Cannot delete the active profile. Please activate another profile first.");
 
-            _context.CmsFeatures.RemoveRange(profile.CmsFeatures);
-            _context.CmsCategories.RemoveRange(profile.CmsCategories);
-            _context.CmsProfiles.Remove(profile);
+            _context.CmsFeatures.RemoveRange(profileToDelete.CmsFeatures);
+            _context.CmsCategories.RemoveRange(profileToDelete.CmsCategories);
+            _context.CmsProfiles.Remove(profileToDelete);
 
             await _context.SaveChangesAsync();
             return true;
         }
 
+
         public async Task<CmsProfileDto> ActivateCmsProfileAsync(int id)
         {
-            var profile = await _context.CmsProfiles
+            var profileToActivate = await _context.CmsProfiles
                .AnyAsync(p => p.Id == id);
 
-            if (!profile)
+            if (!profileToActivate)
             {
                 throw new KeyNotFoundException($"Profile with ID {id} not found.");
             }

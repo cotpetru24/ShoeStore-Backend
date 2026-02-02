@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
 using ShoeStore.Dto.User;
@@ -18,6 +19,7 @@ namespace ShoeStore.Services
             _context = context;
         }
 
+
         public async Task<UserProfileDto?> GetUserProfileAsync(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -26,14 +28,12 @@ namespace ShoeStore.Services
             var userDetail = await _context.UserDetails
                 .FirstOrDefaultAsync(ud => ud.AspNetUserId == userId);
 
-            // Get user statistics
             var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
             var completedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
             var returnedOrders = await _context.Orders
                 .CountAsync(o => o.UserId == userId &&
-                    ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Returned ||
-                    (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing));
+                    (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Returned);
 
             return new UserProfileDto
             {
@@ -41,28 +41,27 @@ namespace ShoeStore.Services
                 Email = user.Email!,
                 FirstName = userDetail?.FirstName ?? "",
                 LastName = userDetail?.LastName ?? "",
-                JoinDate = userDetail != null ? DateTime.UtcNow : DateTime.UtcNow, // Default to now if no user detail
+                JoinDate = userDetail != null ? DateTime.UtcNow : DateTime.UtcNow,
                 TotalOrders = totalOrders,
                 CompletedOrders = completedOrders,
                 ReturnedOrders = returnedOrders
             };
         }
 
+
         public async Task<bool> UpdateUserProfileAsync(string userId, UpdateUserProfileRequestDto request)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return false;
 
-            // Update Identity user email if changed
             if (user.Email != request.Email)
             {
                 user.Email = request.Email;
-                user.UserName = request.Email; // Assuming email is used as username
+                user.UserName = request.Email;
                 var result = await _userManager.UpdateAsync(user);
                 if (!result.Succeeded) return false;
             }
 
-            // Update or create user detail
             var userDetail = await _context.UserDetails
                 .FirstOrDefaultAsync(ud => ud.AspNetUserId == userId);
 
@@ -86,6 +85,7 @@ namespace ShoeStore.Services
             return true;
         }
 
+
         public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequestDto request)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -93,24 +93,6 @@ namespace ShoeStore.Services
 
             var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
             return result.Succeeded;
-        }
-
-        public async Task<List<GetAllUsersResponseDto>> GetAllUsersAsync()
-        {
-            var users = await _context.UserDetails
-                .Include(u => u.AspNetUser)
-                .Select(u => new GetAllUsersResponseDto
-                {
-                    //Id = u.AspNetUser.Id,
-                    //Email = u.AspNetUser.Email,
-                    //EmailConfirmed = u.AspNetUser.EmailConfirmed,
-                    //LockoutEnd = u.AspNetUser.LockoutEnd,
-                    //LockoutEnabled = u.AspNetUser.LockoutEnabled,
-                    //AccessFailedCount = u.AspNetUser.AccessFailedCount
-                })
-                .ToListAsync();
-
-            return users;
         }
     }
 }

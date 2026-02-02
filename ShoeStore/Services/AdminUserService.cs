@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Address;
 using ShoeStore.Dto.Admin;
 using ShoeStore.Dto.Order;
 using ShoeStore.Dto.Payment;
+using Stripe.Climate;
 
 namespace ShoeStore.Services
 {
@@ -15,13 +17,13 @@ namespace ShoeStore.Services
         private readonly ShoeStoreContext _context;
         private readonly IdentityContext _identityContext;
 
-        public AdminUserService(
-            UserManager<IdentityUser> userManager,
-            ShoeStoreContext context)
+        public AdminUserService(UserManager<IdentityUser> userManager, ShoeStoreContext context, IdentityContext identityContext)
         {
             _userManager = userManager;
             _context = context;
+            _identityContext = identityContext;
         }
+
 
         public async Task<AdminUsersListDto> GetUsersAsync(GetAdminUsersRequestDto request)
         {
@@ -32,25 +34,25 @@ namespace ShoeStore.Services
 
             if (!string.IsNullOrEmpty(request.SearchTerm))
             {
-                var term = request.SearchTerm.ToLower();
+                var term = $"%{request.SearchTerm}%";
 
                 query = query.Where(o =>
-                    o.AspNetUserId.Contains(term)
-                    || (o.FirstName + " " + o.LastName).ToLower().Contains(term)
-                    || (o.AspNetUser != null && o.AspNetUser.Email.ToLower().Contains(term))
+                    EF.Functions.ILike(o.AspNetUserId, term) ||
+                    EF.Functions.ILike(o.FirstName + " " + o.LastName, term) ||
+                    (o.AspNetUser != null && EF.Functions.ILike(o.AspNetUser.Email, term))
                 );
             }
 
             if (request.UserStatus != null)
             {
-                query = request.UserStatus == UserStatus.Blocked
+                query = request.UserStatus == UserStatusEnum.Blocked
                         ? query.Where(u => u.IsBlocked == true)
                         : query.Where(u => u.IsBlocked == false);
             }
 
             if (request.UserRole != null)
             {
-                var roleName = request.UserRole == UserRole.Administrator
+                var roleName = request.UserRole == UserRoleEnum.Administrator
                     ? "Administrator"
                     : "Customer";
 
@@ -62,7 +64,6 @@ namespace ShoeStore.Services
                     select d;
             }
 
-            // Apply sorting
             var sortBy = request.SortBy;
             var sortDir = request.SortDirection;
 
@@ -70,20 +71,20 @@ namespace ShoeStore.Services
 
             switch (sortBy)
             {
-                case AdminUserSortBy.Name:
-                    sortedQuery = sortDir == AdminUserSortDirection.Ascending
+                case AdminUsersSortByEnum.Name:
+                    sortedQuery = sortDir == SortDirectionEnum.Ascending
                         ? query.OrderBy(u => u.FirstName)
                         : query.OrderByDescending(u => u.FirstName);
                     break;
 
-                case AdminUserSortBy.DateCreated:
-                    sortedQuery = sortDir == AdminUserSortDirection.Ascending
+                case AdminUsersSortByEnum.DateCreated:
+                    sortedQuery = sortDir == SortDirectionEnum.Ascending
                         ? query.OrderBy(u => u.CreatedAt)
                         : query.OrderByDescending(u => u.CreatedAt);
                     break;
 
                 default:
-                    sortedQuery = sortDir == AdminUserSortDirection.Ascending
+                    sortedQuery = sortDir == SortDirectionEnum.Ascending
                         ? query.OrderBy(u => u.CreatedAt)
                         : query.OrderByDescending(u => u.CreatedAt);
                     break;
@@ -101,14 +102,11 @@ namespace ShoeStore.Services
 
             var adminUsers = new List<AdminUserDto>();
 
-            // Get user details and roles for each user
             foreach (var user in users)
             {
-                //var identityUser = user.AspNetUser;
                 var identityUser = await _userManager.FindByIdAsync(user.AspNetUserId);
                 var userRoles = await _userManager.GetRolesAsync(identityUser);
 
-                // Get user statistics
                 var userOrders = await _context.Orders
                     .Where(o => o.UserId == user.AspNetUserId)
                     .ToListAsync();
@@ -136,7 +134,6 @@ namespace ShoeStore.Services
                 });
             }
 
-            //Admin users stats 
             var totalUsersCount = await _context.UserDetails.CountAsync();
             var totalActiveUsersCount = await _context.UserDetails
                 .Where(u => u.IsBlocked != true && u.IsHidden != true)
@@ -166,6 +163,7 @@ namespace ShoeStore.Services
                 TotalPages = totalPages
             };
         }
+
 
         public async Task<AdminUserDto?> GetUserByIdAsync(string userId)
         {
@@ -200,12 +198,12 @@ namespace ShoeStore.Services
             };
         }
 
-        public async Task<bool> UpdateUserAsync(string userId, UpdateUserRequestDto request)
+
+        public async Task<bool> UpdateUserAsync(string userId, AdminUpdateUserRequestDto request)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return false;
 
-            // Update user details
             var userDetail = await _context.UserDetails
                 .FirstOrDefaultAsync(ud => ud.AspNetUserId == userId);
 
@@ -226,11 +224,9 @@ namespace ShoeStore.Services
                 userDetail.IsBlocked = request.IsBlocked ?? userDetail.IsBlocked;
             }
 
-            // Update lockout settings
             user.LockoutEnabled = request.LockoutEnabled ?? user.LockoutEnabled;
             user.LockoutEnd = request.LockoutEnd ?? user.LockoutEnd;
 
-            // Update email
             user.Email = request.Email ?? user.Email;
 
             var updateResult = await _userManager.UpdateAsync(user);
@@ -238,49 +234,18 @@ namespace ShoeStore.Services
 
             if (request.Roles.Any())
             {
-                // Update roles
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded) return false;
 
-                var addResult = await _userManager.AddToRolesAsync(user, request.Roles);
-                if (!addResult.Succeeded) return false;
+                var addRolesResult = await _userManager.AddToRolesAsync(user, request.Roles);
+                if (!addRolesResult.Succeeded) return false;
             }
 
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> CreateUserAsync(CreateUserRequestDto request)
-        {
-            var user = new IdentityUser
-            {
-                UserName = request.Email,
-                Email = request.Email,
-                EmailConfirmed = true
-            };
-
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (!result.Succeeded) return false;
-
-            // Create user detail
-            var userDetail = new UserDetail
-            {
-                AspNetUserId = user.Id,
-                FirstName = request.FirstName ?? "",
-                LastName = request.LastName ?? ""
-            };
-            _context.UserDetails.Add(userDetail);
-
-            // Add roles
-            if (request.Roles.Any())
-            {
-                await _userManager.AddToRolesAsync(user, request.Roles);
-            }
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
 
         public async Task<bool> DeleteUserAsync(string userId)
         {
@@ -296,20 +261,20 @@ namespace ShoeStore.Services
             return affected > 0;
         }
 
-        public async Task<bool> UpdateUserPasswordAsync(string userId, UpdateUserPasswordRequestDto request)
+
+        public async Task<bool> UpdateUserPasswordAsync(string userId, AdminUpdateUserPasswordRequestDto request)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return false;
 
-            // Remove current password
             await _userManager.RemovePasswordAsync(user);
 
-            // Add new password
             var result = await _userManager.AddPasswordAsync(user, request.NewPassword);
             return result.Succeeded;
         }
 
-        public async Task<AdminOrderListDto> GetUserOrdersAsync(GetUserOrdersRequestDto request)
+
+        public async Task<AdminOrdersListDto> GetUserOrdersAsync(GetAdminUserOrdersRequestDto request)
         {
             var query = _context.Orders
                 .Include(o => o.ShippingAddress)
@@ -319,16 +284,14 @@ namespace ShoeStore.Services
                     .ThenInclude(p => p.Product)
                 .Include(o => o.Payment)
                     .ThenInclude(p => p.PaymentMethod)
-                .Include(o => o.Payment)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
                 .Where(o => o.UserId == request.UserId)
                 .AsQueryable();
 
-            // Apply filters
-            if (!string.IsNullOrEmpty(request.StatusFilter))
+            if (request.StatusFilter != null)
             {
-                query = query.Where(o => ((OrderStatusEnum)o.OrderStatus).ToString() == request.StatusFilter);
+                query = query.Where(o => (OrderStatusEnum)o.OrderStatus == request.StatusFilter);
             }
 
             if (request.FromDate.HasValue)
@@ -341,7 +304,6 @@ namespace ShoeStore.Services
                 query = query.Where(o => o.CreatedAt <= request.ToDate);
             }
 
-            // Sort by creation date descending by default
             query = query.OrderByDescending(o => o.CreatedAt);
 
             var totalCount = await query.CountAsync();
@@ -354,13 +316,12 @@ namespace ShoeStore.Services
 
             var adminOrders = new List<AdminOrderDto>();
 
-            // Populate order information
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            var userDetail = await _context.UserDetails
+                .FirstOrDefaultAsync(ud => ud.AspNetUserId == request.UserId);
+
             foreach (var order in orders)
             {
-                var user = await _userManager.FindByIdAsync(order.UserId!);
-                var userDetail = await _context.UserDetails
-                    .FirstOrDefaultAsync(ud => ud.AspNetUserId == order.UserId);
-
                 var orderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
@@ -375,7 +336,7 @@ namespace ShoeStore.Services
                 {
                     Id = order.Payment.Id,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
-                    PaymentStatus = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString(),
+                    PaymentStatus = (PaymentStatusEnum)order.Payment.PaymentStatus,
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt
@@ -387,8 +348,7 @@ namespace ShoeStore.Services
                     UserId = order.UserId!,
                     UserEmail = user?.Email ?? "",
                     UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                    OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
-                    OrderStatusCode = order.OrderStatus.ToString(),
+                    OrderStatus = (OrderStatusEnum)order.OrderStatus,
                     Subtotal = order.Subtotal,
                     ShippingCost = order.ShippingCost,
                     Discount = order.Discount,
@@ -396,6 +356,9 @@ namespace ShoeStore.Services
                     Notes = order.Notes,
                     CreatedAt = order.CreatedAt,
                     UpdatedAt = order.UpdatedAt,
+                    OrderItems = orderItems,
+                    Payment = payment,
+
                     ShippingAddress = order.ShippingAddress != null ? new AddressDto
                     {
                         Id = order.ShippingAddress.Id,
@@ -404,6 +367,7 @@ namespace ShoeStore.Services
                         Postcode = order.ShippingAddress.Postcode,
                         Country = order.ShippingAddress.Country,
                     } : null,
+
                     BillingAddress = order.BillingAddress != null ? new AddressDto
                     {
                         Id = order.BillingAddress.Id,
@@ -412,12 +376,10 @@ namespace ShoeStore.Services
                         Postcode = order.BillingAddress.Postcode,
                         Country = order.BillingAddress.Country,
                     } : null,
-                    OrderItems = orderItems,
-                    Payment = payment
                 });
             }
 
-            return new AdminOrderListDto
+            return new AdminOrdersListDto
             {
                 Orders = adminOrders,
                 TotalQueryCount = totalCount,

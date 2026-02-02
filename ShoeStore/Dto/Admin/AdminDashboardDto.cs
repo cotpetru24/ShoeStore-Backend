@@ -18,7 +18,7 @@ namespace ShoeStore.Dto.Admin
         public int NewOrdersToday { get; set; }
         public int LowStockProducts { get; set; }
         public int OutOfStockProducts { get; set; }
-        public List<RecentActivityDto> RecentActivity { get; set; }
+        public List<AdminRecentActivityDto> RecentActivity { get; set; } = new List<AdminRecentActivityDto>();
 
     }
 }

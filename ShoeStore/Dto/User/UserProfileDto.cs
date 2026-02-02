@@ -12,15 +12,3 @@ namespace ShoeStore.Dto.User
         public int ReturnedOrders { get; set; }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

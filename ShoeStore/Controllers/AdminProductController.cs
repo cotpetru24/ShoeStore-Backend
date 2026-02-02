@@ -22,7 +22,7 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminProductListDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<AdminProductListDto>> GetProductsAsync([FromQuery] GetProductsRequestDto request)
+        public async Task<ActionResult<AdminProductListDto>> GetProductsAsync([FromQuery] GetAdminProductsRequestDto request)
         {
             if (request.PageNumber < 1) request.PageNumber = 1;
             if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;

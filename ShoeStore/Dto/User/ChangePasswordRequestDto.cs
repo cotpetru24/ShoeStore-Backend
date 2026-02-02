@@ -8,7 +8,7 @@ namespace ShoeStore.Dto.User
         public string CurrentPassword { get; set; } = null!;
 
         [Required(ErrorMessage = "New password is required")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 6 characters long")]
         public string NewPassword { get; set; } = null!;
 
         [Required(ErrorMessage = "Confirm password is required")]
@@ -16,15 +16,3 @@ namespace ShoeStore.Dto.User
         public string ConfirmPassword { get; set; } = null!;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

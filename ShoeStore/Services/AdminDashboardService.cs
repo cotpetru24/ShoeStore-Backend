@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Admin;
-using ShoeStore.Dto.Order;
 
 namespace ShoeStore.Services
 {
@@ -11,9 +11,7 @@ namespace ShoeStore.Services
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ShoeStoreContext _context;
 
-        public AdminDashboardService(
-            UserManager<IdentityUser> userManager,
-            ShoeStoreContext context)
+        public AdminDashboardService(UserManager<IdentityUser> userManager, ShoeStoreContext context)
         {
             _userManager = userManager;
             _context = context;
@@ -28,21 +26,18 @@ namespace ShoeStore.Services
             var totalOrders = await _context.Orders.CountAsync();
             var totalProducts = await _context.Products.CountAsync();
 
-            // Calculate new orders today
             var newOrdersToday = await _context.Orders
                 .Where(o => o.CreatedAt >= today)
                 .CountAsync();
 
-            // Get total revenue from orders with processing, shipped, and delivered status
             var totalRevenueOrders = await _context.Orders
-                .Where(o => o.OrderStatus != null
+                .Where(o => o.OrderStatus != 0
                 && ((OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered
                 || (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Processing
                 || (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Shipped))
                 .ToListAsync();
             var totalRevenue = totalRevenueOrders.Sum(o => o.Total);
 
-            // Get order counts by status
             var ordersWithStatus = await _context.Orders
                 .ToListAsync();
 
@@ -52,22 +47,18 @@ namespace ShoeStore.Services
             var deliveredOrdersCount = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered);
             var cancelledOrders = ordersWithStatus.Count(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Cancelled);
 
-            // Calculate today's revenue
             var todayRevenue = totalRevenueOrders
                 .Where(o => o.CreatedAt >= today)
                 .Sum(o => o.Total);
 
-            // Calculate this month's revenue
             var thisMonthRevenue = totalRevenueOrders
                 .Where(o => o.CreatedAt >= thisMonth)
                 .Sum(o => o.Total);
 
-            // Calculate new users today
             var newUsersToday = await _context.UserDetails
                 .Where(u => u.CreatedAt >= today)
                 .CountAsync();
 
-            // Calculate new users this month
             var newUsersThisMonth = await _context.UserDetails
                 .Where(u => u.CreatedAt >= thisMonth)
                 .CountAsync();
@@ -87,7 +78,7 @@ namespace ShoeStore.Services
                 .CountAsync(p => p.TotalStock == 0);
 
             var userQuery = _context.UserDetails
-                .Select(u => new RecentActivityDto
+                .Select(u => new AdminRecentActivityDto
                 {
                     Source = "User",
                     UserGuid = u.AspNetUserId,
@@ -98,7 +89,7 @@ namespace ShoeStore.Services
                 });
 
             var productQuery = _context.Products
-                .Select(p => new RecentActivityDto
+                .Select(p => new AdminRecentActivityDto
                 {
                     Source = "Product",
                     UserGuid = null,
@@ -109,7 +100,7 @@ namespace ShoeStore.Services
                 });
 
             var orderQuery = _context.Orders
-                .Select(o => new RecentActivityDto
+                .Select(o => new AdminRecentActivityDto
                 {
                     Source = "Order",
                     UserGuid = null,
@@ -127,7 +118,7 @@ namespace ShoeStore.Services
 
             var recentActivities = unifiedQuery
                 .AsEnumerable()
-                .Select(x => new RecentActivityDto
+                .Select(x => new AdminRecentActivityDto
                 {
                     Source = x.Source,
                     UserGuid = x.UserGuid,

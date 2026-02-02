@@ -1,10 +1,7 @@
-using Microsoft.Extensions.Options;
 using ShoeStore.DataContext.PostgreSQL.Models;
-using ShoeStore.Dto.Admin;
+using ShoeStore.Dto;
 using ShoeStore.Dto.Payment;
 using Stripe;
-using Stripe.Forwarding;
-using Stripe.TestHelpers;
 
 namespace ShoeStore.Services
 {
@@ -16,6 +13,7 @@ namespace ShoeStore.Services
         {
             _dbContext = dbContext;
         }
+
 
         public async Task<CreatePaymentIntentResponseDto> CreatePaymentIntent(CreatePaymentIntentRequestDto request)
         {
@@ -39,6 +37,7 @@ namespace ShoeStore.Services
 
             return intent;
         }
+
 
         public async Task<PaymentIntent> StorePaymentDetails(string paymentIntentId)
         {
@@ -105,6 +104,7 @@ namespace ShoeStore.Services
             return paymentIntent;
         }
 
+
         public async Task<bool> RefundPayment(string paymentIntentId)
         {
             var refundService = new Stripe.RefundService();
@@ -126,6 +126,7 @@ namespace ShoeStore.Services
             return refund.Status == "succeeded";
         }
 
+
         public async Task<PaymentIntent> GetPaymentIntentFromStripe(string paymentIntentId)
         {
             var service = new PaymentIntentService();
@@ -133,7 +134,5 @@ namespace ShoeStore.Services
 
             return paymentIntent;
         }
-
-
     }
 }
