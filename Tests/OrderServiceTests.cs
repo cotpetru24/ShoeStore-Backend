@@ -1,10 +1,11 @@
-using Xunit;
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.DataContext.PostgreSQL.Models;
-using ShoeStore.Services;
-using ShoeStore.Dto.Order;
 using Moq;
-using AutoMapper;
+using ShoeStore.DataContext.PostgreSQL.Models;
+using ShoeStore.Dto;
+using ShoeStore.Dto.Order;
+using ShoeStore.Services;
+using Stripe;
+using Xunit;
 
 namespace ShoeStore.Tests
 {
@@ -19,22 +20,38 @@ namespace ShoeStore.Tests
             return new ShoeStoreContext(options);
         }
 
-        private PaymentService CreatePaymentService(ShoeStoreContext context)
-        {
-            return new PaymentService(context);
-        }
 
         [Fact]
         public async Task PlaceOrderAsync_ShouldThrowArgumentException_WhenRequestedQuantityExceedsStock()
         {
             var context = CreateContext();
-            var mapper = Mock.Of<IMapper>();
-            var paymentService = CreatePaymentService(context);
-            var orderService = new OrderService(context, paymentService);
+            var mockPayment = new Mock<IPaymentService>();
+
+            mockPayment.Setup(x => x.GetPaymentIntentFromStripe(It.IsAny<string>()))
+                    .ReturnsAsync(new PaymentIntent { Id = "paymentTest", Status = "succeeded" });
+            mockPayment.Setup(x => x.StorePaymentDetails(It.IsAny<string>()))
+                .ReturnsAsync((string id) =>
+                {
+                    context.Payments.Add(new Payment
+                    {
+                        PaymentIntentId = id,
+                        PaymentMethodId = 1,
+                        PaymentStatus = (int)PaymentStatusEnum.Paid,
+                        Amount = 200m,
+                        Currency = "gbp",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    context.SaveChanges();
+                    return new PaymentIntent { Id = id, Status = "succeeded" };
+                });
+
+            var orderService = new OrderService(context, mockPayment.Object);
 
             var brand = new Brand { Id = 1, Name = "Nike" };
             var audience = new Audience { Id = 1, Code = "men", DisplayName = "Men" };
-            var product = new Product
+
+            var product = new DataContext.PostgreSQL.Models.Product
             {
                 Id = 1,
                 Name = "Test Shoe",
@@ -46,6 +63,7 @@ namespace ShoeStore.Tests
                     new ProductSize { Id = 1, UkSize = 9, Stock = 5, Barcode = "BAR123", Sku = "1-9-BAR123" }
                 }
             };
+
             var shippingAddress = new UserAddress
             {
                 Id = 1,
@@ -62,8 +80,21 @@ namespace ShoeStore.Tests
             context.UserAddresses.Add(shippingAddress);
             await context.SaveChangesAsync();
 
+            var paymentMethod = new DataContext.PostgreSQL.Models.PaymentMethod()
+            {
+                Id = 1,
+                Code = "card",
+                DisplayName = "Card",
+                Provider = "stripe",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            context.PaymentMethods.Add(paymentMethod);
+
             var request = new PlaceOrderRequestDto
             {
+                PaymentIntentId = "paymentTest",
                 OrderItems = new List<OrderItemRequestDto>
                 {
                     new OrderItemRequestDto { ProductId = 1, ProductSizeBarcode = "BAR123", Quantity = 10 }
@@ -80,18 +111,39 @@ namespace ShoeStore.Tests
             Assert.Contains("Insufficient stock", exception.Message);
         }
 
+
         [Fact]
-        public async Task PlaceOrderAsync_ShouldDecreaseStock_WhenOrderIsPlaced()
+        public async Task CreateOrderAsync_ShouldDecreaseStock_WhenOrderIsCreated()
         {
             var context = CreateContext();
-            var mapper = Mock.Of<IMapper>();
-            var paymentService = CreatePaymentService(context);
-            var orderService = new OrderService(context, paymentService);
+            var mockPayment = new Mock<IPaymentService>();
+
+            mockPayment.Setup(x => x.GetPaymentIntentFromStripe(It.IsAny<string>()))
+                .ReturnsAsync(new PaymentIntent { Id = "paymentTest", Status = "succeeded" });
+            mockPayment.Setup(x => x.StorePaymentDetails(It.IsAny<string>()))
+                .ReturnsAsync((string id) =>
+                {
+                    context.Payments.Add(new Payment
+                    {
+                        PaymentIntentId = id,
+                        PaymentMethodId = 1,
+                        PaymentStatus = (int)PaymentStatusEnum.Paid,
+                        Amount = 200m,
+                        Currency = "gbp",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    context.SaveChanges();
+                    return new PaymentIntent { Id = id, Status = "succeeded" };
+                });
+
+            var orderService = new OrderService(context, mockPayment.Object);
 
             var brand = new Brand { Id = 1, Name = "Nike" };
             var audience = new Audience { Id = 1, Code = "men", DisplayName = "Men" };
             var productSize = new ProductSize { Id = 1, UkSize = 9, Stock = 10, Barcode = "BAR123", Sku = "1-9-BAR123" };
-            var product = new Product
+
+            var product = new DataContext.PostgreSQL.Models.Product
             {
                 Id = 1,
                 Name = "Test Shoe",
@@ -100,6 +152,7 @@ namespace ShoeStore.Tests
                 AudienceId = 1,
                 ProductSizes = new List<ProductSize> { productSize }
             };
+
             var shippingAddress = new UserAddress
             {
                 Id = 1,
@@ -114,6 +167,32 @@ namespace ShoeStore.Tests
             context.Audiences.Add(audience);
             context.Products.Add(product);
             context.UserAddresses.Add(shippingAddress);
+            await context.SaveChangesAsync();
+
+            var paymentMethod = new DataContext.PostgreSQL.Models.PaymentMethod()
+            {
+                Id = 1,
+                Code = "card",
+                DisplayName = "Card",
+                Provider = "stripe",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            context.PaymentMethods.Add(paymentMethod);
+
+            var payment = new Payment
+            {
+                PaymentIntentId = "paymentTest",
+                PaymentMethodId = 1,
+                PaymentStatus = (int)PaymentStatusEnum.Paid,
+                Amount = 200m,
+                Currency = "gbp",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            context.Payments.Add(payment);
             await context.SaveChangesAsync();
 
             var request = new PlaceOrderRequestDto
@@ -128,23 +207,44 @@ namespace ShoeStore.Tests
                 Discount = 0
             };
 
-            await orderService.CreateOrderAsync(request, "user1", "testIntent");
+            await orderService.CreateOrderAsync(request, "user1", "paymentTest");
 
             await context.Entry(productSize).ReloadAsync();
             Assert.Equal(7, productSize.Stock);
         }
 
+
         [Fact]
         public async Task PlaceOrderAsync_ShouldCreateOrderWithCorrectTotal_WhenOrderIsPlaced()
         {
             var context = CreateContext();
-            var mapper = Mock.Of<IMapper>();
-            var paymentService = CreatePaymentService(context);
-            var orderService = new OrderService(context, paymentService);
+            var mockPaymentService = new Mock<IPaymentService>();
+
+            mockPaymentService.Setup(x => x.GetPaymentIntentFromStripe(It.IsAny<string>()))
+                    .ReturnsAsync(new PaymentIntent { Id = "paymentTest", Status = "succeeded" });
+            mockPaymentService.Setup(x => x.StorePaymentDetails(It.IsAny<string>()))
+                .ReturnsAsync((string id) =>
+                {
+                    context.Payments.Add(new Payment
+                    {
+                        PaymentIntentId = id,
+                        PaymentMethodId = 1,
+                        PaymentStatus = (int)PaymentStatusEnum.Paid,
+                        Amount = 200m,
+                        Currency = "gbp",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    context.SaveChanges();
+                    return new PaymentIntent { Id = id, Status = "succeeded" };
+                });
+
+            var orderService = new OrderService(context, mockPaymentService.Object);
 
             var brand = new Brand { Id = 1, Name = "Nike" };
             var audience = new Audience { Id = 1, Code = "men", DisplayName = "Men" };
-            var product = new Product
+
+            var product = new DataContext.PostgreSQL.Models.Product
             {
                 Id = 1,
                 Name = "Test Shoe",
@@ -156,6 +256,7 @@ namespace ShoeStore.Tests
                     new ProductSize { Id = 1, UkSize = 9, Stock = 10, Barcode = "BAR123", Sku = "1-9-BAR123" }
                 }
             };
+
             var shippingAddress = new UserAddress
             {
                 Id = 1,
@@ -172,6 +273,32 @@ namespace ShoeStore.Tests
             context.UserAddresses.Add(shippingAddress);
             await context.SaveChangesAsync();
 
+            var paymentMethod = new DataContext.PostgreSQL.Models.PaymentMethod
+            {
+                Id = 1,
+                Code = "card",
+                DisplayName = "Card",
+                Provider = "stripe",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var payment = new Payment
+            {
+                PaymentIntentId = "paymentTest",
+                PaymentMethodId = 1,
+                PaymentStatus = (int)PaymentStatusEnum.Paid,
+                Amount = 200m,
+                Currency = "gbp",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            context.PaymentMethods.Add(paymentMethod);
+            context.Payments.Add(payment);
+            await context.SaveChangesAsync();
+
             var request = new PlaceOrderRequestDto
             {
                 OrderItems = new List<OrderItemRequestDto>
@@ -184,7 +311,7 @@ namespace ShoeStore.Tests
                 Discount = 10
             };
 
-            var response = await orderService.PlaceOrderAsync(request, "user1");
+            var response = await orderService.CreateOrderAsync(request, "user1", "paymentTest");
 
             var order = await context.Orders.FirstOrDefaultAsync(o => o.Id == response.OrderId);
             Assert.NotNull(order);

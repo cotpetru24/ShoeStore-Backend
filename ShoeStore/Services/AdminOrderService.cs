@@ -13,9 +13,9 @@ namespace ShoeStore.Services
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ShoeStoreContext _context;
-        private readonly PaymentService _paymentService;
+        private readonly IPaymentService _paymentService;
 
-        public AdminOrderService(UserManager<IdentityUser> userManager, ShoeStoreContext context, PaymentService paymentService)
+        public AdminOrderService(UserManager<IdentityUser> userManager, ShoeStoreContext context, IPaymentService paymentService)
         {
             _userManager = userManager;
             _context = context;

@@ -14,7 +14,6 @@ namespace ShoeStore.Tests.IntegrationTests
         {
             builder.ConfigureServices(services =>
             {
-                // Remove the real database context registration
                 var descriptor = services.SingleOrDefault(
                     d => d.ServiceType == typeof(DbContextOptions<ShoeStoreContext>));
                 if (descriptor != null)
@@ -22,7 +21,6 @@ namespace ShoeStore.Tests.IntegrationTests
                     services.Remove(descriptor);
                 }
 
-                // Remove any existing ShoeStoreContext registration
                 var contextDescriptor = services.SingleOrDefault(
                     d => d.ServiceType == typeof(ShoeStoreContext));
                 if (contextDescriptor != null)
@@ -30,7 +28,6 @@ namespace ShoeStore.Tests.IntegrationTests
                     services.Remove(contextDescriptor);
                 }
 
-                // Add in-memory database for testing
                 services.AddDbContext<ShoeStoreContext>(options =>
                 {
                     options.UseInMemoryDatabase("TestDb_" + Guid.NewGuid().ToString());
@@ -38,16 +35,12 @@ namespace ShoeStore.Tests.IntegrationTests
                 });
             });
 
-            // Set environment to Testing to skip seeding operations
             builder.UseEnvironment("Testing");
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
         {
             var host = base.CreateHost(builder);
-
-            // Skip seeding operations in test environment
-            // The seeding will be handled by the test setup if needed
 
             return host;
         }

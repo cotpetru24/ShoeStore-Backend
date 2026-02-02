@@ -16,9 +16,9 @@ namespace ShoeStore.Services
     public class OrderService
     {
         private readonly ShoeStoreContext _context;
-        private readonly PaymentService _paymentService;
+        private readonly IPaymentService _paymentService;
 
-        public OrderService(ShoeStoreContext injectedContext, PaymentService paymentService)
+        public OrderService(ShoeStoreContext injectedContext, IPaymentService paymentService)
         {
             _context = injectedContext;
             _paymentService = paymentService;

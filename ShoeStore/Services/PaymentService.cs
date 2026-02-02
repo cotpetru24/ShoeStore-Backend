@@ -5,7 +5,7 @@ using Stripe;
 
 namespace ShoeStore.Services
 {
-    public class PaymentService
+    public class PaymentService : IPaymentService
     {
         private readonly ShoeStoreContext _dbContext;
 
