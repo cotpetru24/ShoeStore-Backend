@@ -9,7 +9,7 @@ namespace ShoeStore.Dto.Payment
         public string Currency { get; set; }
         public string? CardBrand { get; set; }
         public string? CardLast4 { get; set; }
-        public string Status { get; set; } = null!;
+        public PaymentStatusEnum Status { get; set; }
         public string PaymentMethod { get; set; }
         public string? ReceiptUrl { get; set; }
     }

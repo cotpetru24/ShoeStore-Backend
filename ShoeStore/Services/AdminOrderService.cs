@@ -51,9 +51,9 @@ namespace ShoeStore.Services
                 );
             }
 
-            if (!string.IsNullOrEmpty(request.StatusFilter))
+            if (request.StatusFilter != null)
             {
-                query = query.Where(o => ((OrderStatusEnum)o.OrderStatus).ToString() == request.StatusFilter);
+                query = query.Where(o => (OrderStatusEnum)o.OrderStatus == request.StatusFilter);
             }
 
             if (request.FromDate.HasValue)

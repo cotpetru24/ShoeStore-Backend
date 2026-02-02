@@ -5,8 +5,6 @@ using ShoeStore.Services;
 using ShoeStore.Dto.Order;
 using Moq;
 using AutoMapper;
-using ShoeStore.Dto.Address;
-using ShoeStore.Dto;
 
 namespace ShoeStore.Tests
 {
@@ -130,7 +128,7 @@ namespace ShoeStore.Tests
                 Discount = 0
             };
 
-            await orderService.PlaceOrderAsync(request, "user1");
+            await orderService.CreateOrderAsync(request, "user1", "testIntent");
 
             await context.Entry(productSize).ReloadAsync();
             Assert.Equal(7, productSize.Stock);

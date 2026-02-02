@@ -262,7 +262,7 @@ namespace ShoeStore.Services
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
                     ReceiptUrl = order.Payment.ReceiptUrl,
                     OrderId = order.Id,
-                    Status = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString()
+                    Status = (PaymentStatusEnum)order.Payment.PaymentStatus
                 }
             };
 
@@ -376,7 +376,7 @@ namespace ShoeStore.Services
                     Currency = order.Payment.Currency,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
                     ReceiptUrl = order.Payment.ReceiptUrl,
-                    Status = ((PaymentStatusEnum)order.Payment.PaymentStatus).ToString()
+                    Status = (PaymentStatusEnum)order.Payment.PaymentStatus
                 }
             }).ToList();
 
