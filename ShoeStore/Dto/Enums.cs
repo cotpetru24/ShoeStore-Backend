@@ -21,29 +21,29 @@ namespace ShoeStore.Dto
     public enum ProductSortByOption
     {
         [EnumMember(Value = "name-asc")]
-        NameAsc,
+        NameAsc = 1,
 
         [EnumMember(Value = "name-desc")]
-        NameDesc,
+        NameDesc = 2,
 
         [EnumMember(Value = "price-asc")]
-        PriceAsc,
+        PriceAsc = 3,
 
         [EnumMember(Value = "price-desc")]
-        PriceDesc,
+        PriceDesc = 4,
 
         [EnumMember(Value = "brand-asc")]
-        BrandAsc,
+        BrandAsc = 5,
 
         [EnumMember(Value = "brand-desc")]
-        BrandDesc
+        BrandDesc = 6
     }
 
 
     public enum OrdersSortByEnum
     {
-        Date,
-        Total
+        Date = 1,
+        Total = 2
     }
 
 

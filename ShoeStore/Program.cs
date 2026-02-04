@@ -26,15 +26,17 @@ namespace ShoeStore
 
             var isDevelopment = builder.Environment.IsDevelopment();
 
-            const string ConnKey = "ShoeStoreConnection";
+            string connKey = isDevelopment
+                ? "ShoeStoreConnection"
+                : "DefaultConnection";
 
-            var connectionString =
-                builder.Configuration.GetConnectionString(ConnKey)
-                ?? Environment.GetEnvironmentVariable($"ConnectionStrings__{ConnKey}");
+            var connectionString = Environment.GetEnvironmentVariable($"ConnectionStrings__{connKey}");
+
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new InvalidOperationException("Database connection string is not configured.");
+                throw new InvalidOperationException(
+                    $"Connection string '{connKey}' is not configured.");
             }
 
             builder.Services.AddDbContext<ShoeStoreContext>(options =>

@@ -8,8 +8,7 @@ namespace ShoeStore.Dto.Order
     {
         public int Id { get; set; }
         public string UserId { get; set; }
-        public OrderStatusEnum OrderStatusId { get; set; }
-        public string? OrderStatusName { get; set; }
+        public OrderStatusEnum Status { get; set; }
         public decimal Subtotal { get; set; }
         public decimal ShippingCost { get; set; }
         public decimal Discount { get; set; }

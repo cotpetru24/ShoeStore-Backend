@@ -206,8 +206,7 @@ namespace ShoeStore.Services
             {
                 Id = order.Id,
                 UserId = order.UserId!,
-                OrderStatusId = (OrderStatusEnum)order.OrderStatus,
-                OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
+                Status = (OrderStatusEnum)order.OrderStatus,
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
@@ -319,8 +318,7 @@ namespace ShoeStore.Services
             {
                 Id = order.Id,
                 UserId = order.UserId,
-                OrderStatusId = (OrderStatusEnum)order.OrderStatus,
-                OrderStatusName = ((OrderStatusEnum)order.OrderStatus).ToString(),
+                Status = (OrderStatusEnum)order.OrderStatus,
                 Subtotal = order.Subtotal,
                 ShippingCost = order.ShippingCost,
                 Discount = order.Discount,
