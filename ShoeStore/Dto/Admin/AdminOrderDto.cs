@@ -9,7 +9,7 @@ namespace ShoeStore.Dto.Admin
         public string UserId { get; set; } = null!;
         public string UserEmail { get; set; } = null!;
         public string UserName { get; set; } = null!;
-        public OrderStatusEnum OrderStatus { get; set; }
+        public OrderStatusEnum Status { get; set; }
         public decimal Subtotal { get; set; }
         public decimal ShippingCost { get; set; }
         public decimal Discount { get; set; }

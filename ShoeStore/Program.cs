@@ -24,7 +24,8 @@ namespace ShoeStore
 
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-            var isDevelopment = builder.Environment.IsDevelopment();
+            //var isDevelopment = builder.Environment.IsDevelopment();
+            var isDevelopment = false;
 
             string connKey = isDevelopment
                 ? "ShoeStoreConnection"
@@ -41,12 +42,18 @@ namespace ShoeStore
 
             builder.Services.AddDbContext<ShoeStoreContext>(options =>
             {
-                options.UseNpgsql(connectionString);
+                options.UseNpgsql(
+                    connectionString,
+                    o => o.EnableRetryOnFailure(0)
+                );
             });
 
             builder.Services.AddDbContext<IdentityContext>(options =>
             {
-                options.UseNpgsql(connectionString);
+                options.UseNpgsql(
+                    connectionString,
+                    o => o.EnableRetryOnFailure(0)
+                );
             });
 
 
@@ -112,11 +119,7 @@ namespace ShoeStore
             StripeConfiguration.ApiKey = Environment.GetEnvironmentVariable("Stripe__SecretKey");
 
 
-            builder.Services.AddControllers()
-                .AddJsonOptions(option =>
-                {
-                    option.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-                });
+            builder.Services.AddControllers();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

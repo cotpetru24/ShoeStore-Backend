@@ -348,7 +348,7 @@ namespace ShoeStore.Services
                     UserId = order.UserId!,
                     UserEmail = user?.Email ?? "",
                     UserName = userDetail != null ? $"{userDetail.FirstName} {userDetail.LastName}".Trim() : "",
-                    OrderStatus = (OrderStatusEnum)order.OrderStatus,
+                    Status = (OrderStatusEnum)order.OrderStatus,
                     Subtotal = order.Subtotal,
                     ShippingCost = order.ShippingCost,
                     Discount = order.Discount,
