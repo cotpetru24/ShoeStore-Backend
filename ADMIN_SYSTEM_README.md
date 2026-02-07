@@ -8,28 +8,21 @@ This admin system has been implemented to work with the existing database struct
 ### 1. Admin DTOs
 - `AdminDashboardDto.cs` - Dashboard statistics
 - `AdminUserDto.cs` - User management
-- `AdminOrderDto.cs` - Order management  
+- `AdminOrderDto.cs` - Order management
 - `AdminProductDto.cs` - Product management
 
-### 2. AdminService
-- Dashboard statistics using existing tables
-- User management with roles and permissions
-- Order management with status updates
-- Product management with stock tracking
+### 2. Admin Services
+- `AdminDashboardService` - Dashboard statistics and metrics
+- `AdminUserService` - User management with roles and permissions
+- `AdminOrderService` - Order management with status updates
+- `AdminProductService` - Product CRUD and stock management
 
-### 3. AdminController
+### 3. Admin Controllers
 - `/api/admin/dashboard` - Dashboard statistics
-- `/api/admin/users` - User CRUD operations
+- `/api/admin/users` - User management (list, update, delete, password update)
 - `/api/admin/orders` - Order management
 - `/api/admin/products` - Product management
-- All endpoints require Admin role authorization
-
-## Frontend Integration
-
-### AdminApiService Updated
-- Replaced mock data with real API calls
-- Connected to backend admin endpoints
-- Proper error handling and logging
+- All endpoints require **Administrator** role authorization
 
 ## Key Features
 
@@ -41,7 +34,8 @@ This admin system has been implemented to work with the existing database struct
 
 ### User Management
 - List users with pagination
-- Create, update, delete users
+- Update users
+- Delete users
 - Role management
 - User statistics
 
@@ -65,22 +59,16 @@ This admin system has been implemented to work with the existing database struct
    dotnet run
    ```
 
-2. **Frontend Setup:**
-   ```bash
-   cd E:\E-Commerce-frontend\ecommerce-app
-   ng serve
-   ```
-
-3. **Admin Access:**
-   - Ensure you have a user with "Admin" role
+2. **Admin Access:**
+   - Ensure you have a user with **Administrator** role
    - The system uses existing database structure
    - No database migrations required
 
 ## Security
-- Role-based authorization (Admin role required)
+- Role-based authorization (Administrator role required)
 - JWT authentication
 - Input validation
-- Comprehensive error handling
+- Centralized error handling
 
 ## Database Compatibility
 - Works with existing database schema
