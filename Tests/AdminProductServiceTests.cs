@@ -34,19 +34,21 @@ namespace ShoeStore.Tests
             context.Audiences.Add(audience);
             await context.SaveChangesAsync();
 
-            var productDto = new AdminProductDto
+            var productDto = new AdminCreateProductRequestDto
             {
                 Name = "Test Product",
                 Description = "Description",
                 Price = 100,
                 BrandId = 5,
-                BrandName = "Test Brand",
-                Audience = "Test Audience",
-                Audience = 1,
-                ProductSizes = new List<ProductSizeDto>
+                AudienceId = 1,
+                ProductSizes = new List<AdminCreateProductSizeRequestDto>
                 {
-                    new ProductSizeDto { Size = 42, Stock = 10, Barcode = "1234567890123" }
-                }
+                    new AdminCreateProductSizeRequestDto
+                    {
+                        Size = 42,
+                        Stock = 10,
+                        Barcode = "1234567890123"
+                    }}
             };
 
             var createdProduct = await adminProductService.CreateProductAsync(productDto);

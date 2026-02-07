@@ -18,25 +18,11 @@ namespace ShoeStore.Dto
     }
 
 
-    public enum ProductSortByOption
+    public enum ProductSortByEnum
     {
-        [EnumMember(Value = "name-asc")]
-        NameAsc = 1,
-
-        [EnumMember(Value = "name-desc")]
-        NameDesc = 2,
-
-        [EnumMember(Value = "price-asc")]
-        PriceAsc = 3,
-
-        [EnumMember(Value = "price-desc")]
-        PriceDesc = 4,
-
-        [EnumMember(Value = "brand-asc")]
-        BrandAsc = 5,
-
-        [EnumMember(Value = "brand-desc")]
-        BrandDesc = 6
+        Name = 1,
+        Price = 2,
+        Brand = 3,
     }
 
 

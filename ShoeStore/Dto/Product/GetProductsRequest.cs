@@ -10,6 +10,7 @@
         public decimal? Size { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 30;
-        public ProductSortByOption? SortBy { get; set; } = null;
+        public ProductSortByEnum? SortBy { get; set; }
+        public SortDirectionEnum? SortDirection { get; set; }
     }
 }

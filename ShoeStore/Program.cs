@@ -25,7 +25,6 @@ namespace ShoeStore
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
             var isDevelopment = builder.Environment.IsDevelopment();
-            //var isDevelopment = false;
 
             string connKey = isDevelopment
                 ? "ShoeStoreConnection"

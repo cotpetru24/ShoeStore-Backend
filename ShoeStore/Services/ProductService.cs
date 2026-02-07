@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL.Models;
-using ShoeStore.Dto.Product;
 using ShoeStore.Dto;
+using ShoeStore.Dto.Product;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ShoeStore.Services
 {
@@ -46,36 +47,34 @@ namespace ShoeStore.Services
                 EF.Functions.ILike(p.Name, $"%{request.SearchTerm}%") ||
                 EF.Functions.ILike(p.Brand.Name, $"%{request.SearchTerm}%"));
 
-            switch (request.SortBy)
+            if (request.SortBy != null)
             {
 
-                case ProductSortByOption.NameAsc:
-                    products = products.OrderBy(p => p.Name);
-                    break;
+                switch (request.SortBy)
+                {
 
-                case ProductSortByOption.NameDesc:
-                    products = products.OrderByDescending(p => p.Name);
-                    break;
+                    case ProductSortByEnum.Name:
+                        products = request.SortDirection == SortDirectionEnum.Ascending
+                            ? products.OrderBy(p => p.Name).ThenBy(p => p.Id)
+                            : products.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id);
+                        break;
 
-                case ProductSortByOption.PriceAsc:
-                    products = products.OrderBy(p => p.Price);
-                    break;
+                    case ProductSortByEnum.Price:
+                        products = request.SortDirection == SortDirectionEnum.Ascending
+                            ? products.OrderBy(p => p.Price).ThenBy(p => p.Id)
+                            : products.OrderByDescending(p => p.Price).ThenByDescending(p => p.Id);
+                        break;
 
-                case ProductSortByOption.PriceDesc:
-                    products = products.OrderByDescending(p => p.Price);
-                    break;
+                    case ProductSortByEnum.Brand:
+                        products = request.SortDirection == SortDirectionEnum.Ascending
+                            ? products.OrderBy(p => p.Brand.Name).ThenBy(p => p.Id)
+                            : products.OrderByDescending(p => p.Brand.Name).ThenByDescending(p => p.Id);
+                        break;
 
-                case ProductSortByOption.BrandAsc:
-                    products = products.OrderBy(p => p.Brand.Name);
-                    break;
-
-                case ProductSortByOption.BrandDesc:
-                    products = products.OrderByDescending(p => p.Brand.Name);
-                    break;
-
-                default:
-                    products = products.OrderBy(p => p.Name);
-                    break;
+                    default:
+                        products = products.OrderBy(p => p.Name);
+                        break;
+                }
             }
 
             request.Page = request.Page < 1 ? 1 : request.Page;

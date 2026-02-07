@@ -290,7 +290,7 @@ namespace ShoeStore.Services
 
             if (request.OrderStatus != null)
             {
-                query = query.Where(o => o.OrderStatus != null && o.OrderStatus == (int)request.OrderStatus);
+                query = query.Where(o => o.OrderStatus == (int)request.OrderStatus);
             }
 
             if (request.FromDate.HasValue)
