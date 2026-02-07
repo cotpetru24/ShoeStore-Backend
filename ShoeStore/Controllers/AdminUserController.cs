@@ -94,13 +94,12 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminOrdersListDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetUserOrdersAsync(string userId, [FromQuery] GetAdminUserOrdersRequestDto request)
+        public async Task<IActionResult> GetUserOrdersAsync(string userId, [FromQuery] GetUserOrdersRequestDto request)
         {
             if (request.PageNumber < 1) request.PageNumber = 1;
             if (request.PageSize < 1 || request.PageSize > 100) request.PageSize = 10;
-            request.UserId = userId;
 
-            var orders = await _adminUserService.GetUserOrdersAsync(request);
+            var orders = await _adminUserService.GetUserOrdersAsync(userId, request);
             return Ok(orders);
         }
     }

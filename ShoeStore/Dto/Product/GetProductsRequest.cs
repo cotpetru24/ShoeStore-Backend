@@ -2,7 +2,7 @@
 {
     public class GetProductsRequest
     {
-        public string? Audience { get; set; } = null;
+        public int? Audience { get; set; } = null;
         public string? Brand { get; set; } = null;
         public decimal? MinPrice { get; set; } = null;
         public decimal? MaxPrice { get; set; } = null;

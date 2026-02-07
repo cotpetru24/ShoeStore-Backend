@@ -26,8 +26,8 @@ namespace ShoeStore.Services
 
             products = products.Where(p => p.IsActive == true);
 
-            if (!string.IsNullOrEmpty(request.Audience))
-                products = products.Where(p => p.Audience != null && EF.Functions.ILike(p.Audience.Code, request.Audience));
+            if (request.Audience != null)
+                products = products.Where(p => p.Audience != null && p.AudienceId == request.Audience);
 
             if (!string.IsNullOrEmpty(request.Brand))
                 products = products.Where(p => p.Brand != null && p.Brand.Name == request.Brand);
@@ -93,7 +93,7 @@ namespace ShoeStore.Services
             var result = await products
                 .Select(p => new ProductDto()
                 {
-                    Audience = p.Audience.DisplayName,
+                    Audience = p.AudienceId,
                     BrandName = p.Brand.Name,
                     IsActive = p.IsActive,
                     DiscountPercentage = p.DiscountPercentage,
@@ -169,7 +169,7 @@ namespace ShoeStore.Services
             var result = await products
                 .Select(p => new ProductDto()
                 {
-                    Audience = p.Audience.DisplayName,
+                    Audience = p.AudienceId,
                     BrandName = p.Brand.Name,
                     IsActive = p.IsActive,
                     DiscountPercentage = p.DiscountPercentage,
@@ -252,7 +252,7 @@ namespace ShoeStore.Services
                 Rating = product.Rating,
                 ReviewCount = product.ReviewCount,
                 BrandName = product.Brand.Name,
-                Audience = product.Audience.DisplayName,
+                Audience = product.AudienceId,
 
                 ProductImages = product.ProductImages
                     .OrderBy(i => i.SortOrder)
@@ -315,7 +315,7 @@ namespace ShoeStore.Services
                     Rating = p.Rating,
                     ReviewCount = p.ReviewCount,
                     BrandName = p.Brand.Name,
-                    Audience = p.Audience.DisplayName,
+                    Audience = p.AudienceId,
 
                     ProductImages = p.ProductImages
                         .OrderBy(i => i.SortOrder)

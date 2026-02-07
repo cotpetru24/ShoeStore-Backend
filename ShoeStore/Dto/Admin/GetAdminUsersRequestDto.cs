@@ -7,7 +7,7 @@
         public string? SearchTerm { get; set; }
         public SortDirectionEnum SortDirection { get; set; } = SortDirectionEnum.Descending;
         public AdminUsersSortByEnum SortBy { get; set; } = AdminUsersSortByEnum.DateCreated;
-        public UserStatusEnum? UserStatus { get; set; }
+        public bool? IsBlocked { get; set; }
         public UserRoleEnum? UserRole { get; set; }
     }
 }

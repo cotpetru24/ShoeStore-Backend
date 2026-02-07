@@ -123,7 +123,7 @@ namespace ShoeStore.Services
                 {
                     Id = order.Payment.Id,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
-                    PaymentStatus = (PaymentStatusEnum)order.Payment.PaymentStatus,
+                    Status = (PaymentStatusEnum)order.Payment.PaymentStatus,
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt
@@ -272,7 +272,7 @@ namespace ShoeStore.Services
                 Payment = new AdminPaymentDto
                 {
                     Id = order.Payment.Id,
-                    PaymentStatus = (PaymentStatusEnum)order.Payment.PaymentStatus,
+                    Status = (PaymentStatusEnum)order.Payment.PaymentStatus,
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt,
@@ -316,7 +316,7 @@ namespace ShoeStore.Services
                 }
 
                 //Conditions for request status == processing
-                if (request.Status == OrderStatusEnum.Processing)
+                if (request.StatusId == OrderStatusEnum.Processing)
                 {
                     throw new InvalidOperationException(
                         "Order status 'Processing' can only be set by the payment system."
@@ -325,29 +325,29 @@ namespace ShoeStore.Services
 
                 // Conditions for current status == processing
                 if (order.OrderStatus == (int)OrderStatusEnum.Processing &&
-                    request.Status != OrderStatusEnum.Shipped &&
-                    request.Status != OrderStatusEnum.Cancelled)
+                    request.StatusId != OrderStatusEnum.Shipped &&
+                    request.StatusId != OrderStatusEnum.Cancelled)
                 {
                     throw new InvalidOperationException("Invalid status transition from Processing.");
                 }
 
                 // Conditions for current status == shipped
                 if (order.OrderStatus == (int)OrderStatusEnum.Shipped &&
-                    request.Status != OrderStatusEnum.Delivered)
+                    request.StatusId != OrderStatusEnum.Delivered)
                 {
                     throw new InvalidOperationException("Invalid status transition from Shipped.");
                 }
 
                 // Conditions for current status == delivered
-                if (request.Status == OrderStatusEnum.Returned &&
+                if (request.StatusId == OrderStatusEnum.Returned &&
                     order.OrderStatus != (int)OrderStatusEnum.Delivered)
                 {
                     throw new InvalidOperationException("Order can be returned only if it has been delivered.");
                 }
 
                 // If cancelling or returned => refund
-                if ((request.Status == OrderStatusEnum.Cancelled ||
-                    request.Status == OrderStatusEnum.Returned) &&
+                if ((request.StatusId == OrderStatusEnum.Cancelled ||
+                    request.StatusId == OrderStatusEnum.Returned) &&
                     order.Payment.PaymentStatus != (int)PaymentStatusEnum.Refunded)
                 {
                     var refundResult = await _paymentService.RefundPayment(order.Payment.PaymentIntentId);
@@ -359,13 +359,15 @@ namespace ShoeStore.Services
                     }
                 }
 
-                order.OrderStatus = (int)request.Status;
+                order.OrderStatus = (int)request.StatusId;
                 order.UpdatedAt = DateTime.UtcNow;
 
-                if (!string.IsNullOrEmpty(request.Notes))
-                {
-                    order.Notes = $"{order.Notes}. Note added on {DateTime.UtcNow.ToString()} => {request.Notes}";
-                }
+                //This will be used for order tracking and order status updated 
+
+                //if (!string.IsNullOrEmpty(request.Notes))
+                //{
+                //    order.Notes = $"{order.Notes}. Note added on {DateTime.UtcNow.ToString()} => {request.Notes}";
+                //}
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

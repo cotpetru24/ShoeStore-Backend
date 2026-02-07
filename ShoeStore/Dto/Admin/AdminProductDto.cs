@@ -12,8 +12,7 @@ namespace ShoeStore.Dto.Admin
         public int TotalStock => ProductSizes?.Sum(s => s.Stock) ?? 0;
         public int BrandId { get; set; }
         public required string BrandName { get; set; }
-        public int AudienceId { get; set; }
-        public required string Audience { get; set; }
+        public int Audience { get; set; }
         public decimal Rating { get; set; }
         public int ReviewCount { get; set; }
         public bool IsNew { get; set; }

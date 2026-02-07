@@ -9,7 +9,7 @@
         public decimal? OriginalPrice { get; set; } = null;
         public int TotalStock => ProductSizes?.Sum(s => s.Stock) ?? 0;
         public string BrandName { get; set; } = string.Empty;
-        public string Audience { get; set; } = string.Empty;
+        public int Audience { get; set; }
         public decimal? Rating { get; set; } = null;
         public int? ReviewCount { get; set; } = null;
         public bool? IsNew { get; set; } = null;

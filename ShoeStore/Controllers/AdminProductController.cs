@@ -70,7 +70,7 @@ namespace ShoeStore.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdminProductDto))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<AdminProductDto>> CreateProductAsync([FromBody] AdminProductDto productToAdd)
+        public async Task<ActionResult<AdminProductDto>> CreateProductAsync([FromBody] AdminCreateProductRequestDto productToAdd)
         {
             var response = await _adminProductService.CreateProductAsync(productToAdd);
             if (response == null)

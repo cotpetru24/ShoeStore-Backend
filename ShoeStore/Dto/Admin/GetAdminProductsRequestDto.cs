@@ -6,7 +6,7 @@
         public int PageSize { get; set; } = 10;
         public string? SearchTerm { get; set; }
         public string? ProductBrand { get; set; }
-        public string? ProductCategory { get; set; }
+        public int? AudienceId { get; set; }
         public bool? IsActive { get; set; }
         public AdminProductStockStatusEnum? ProductStockStatus { get; set; }
         public AdminProductsSortByEnum? SortBy { get; set; }

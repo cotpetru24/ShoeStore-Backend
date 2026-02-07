@@ -3,7 +3,7 @@
     public class AdminPaymentDto
     {
         public int Id { get; set; }
-        public PaymentStatusEnum? PaymentStatus { get; set; }
+        public PaymentStatusEnum? Status { get; set; }
         public string? TransactionId { get; set; }
         public DateTime? CreatedAt { get; set; }
         public decimal Amount { get; set; }

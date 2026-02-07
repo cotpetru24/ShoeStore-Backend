@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.DataContext.PostgreSQL;
 using ShoeStore.DataContext.PostgreSQL.Models;
@@ -43,11 +44,9 @@ namespace ShoeStore.Services
                 );
             }
 
-            if (request.UserStatus != null)
+            if (request.IsBlocked != null)
             {
-                query = request.UserStatus == UserStatusEnum.Blocked
-                        ? query.Where(u => u.IsBlocked == true)
-                        : query.Where(u => u.IsBlocked == false);
+                query = query.Where(u => u.IsBlocked == request.IsBlocked);
             }
 
             if (request.UserRole != null)
@@ -56,12 +55,14 @@ namespace ShoeStore.Services
                     ? "Administrator"
                     : "Customer";
 
-                query =
-                    from d in query
-                    join ur in _identityContext.UserRoles on d.AspNetUser.Id equals ur.UserId
+                var userIdsInRole = await (
+                    from ur in _identityContext.UserRoles
                     join r in _identityContext.Roles on ur.RoleId equals r.Id
                     where r.Name == roleName
-                    select d;
+                    select ur.UserId
+                ).ToListAsync();
+
+                query = query.Where(ud => userIdsInRole.Contains(ud.AspNetUserId));
             }
 
             var sortBy = request.SortBy;
@@ -107,30 +108,23 @@ namespace ShoeStore.Services
                 var identityUser = await _userManager.FindByIdAsync(user.AspNetUserId);
                 var userRoles = await _userManager.GetRolesAsync(identityUser);
 
-                var userOrders = await _context.Orders
-                    .Where(o => o.UserId == user.AspNetUserId)
-                    .ToListAsync();
-
-                var totalOrders = userOrders.Count;
-                var totalSpent = userOrders
-                    .Where(o => (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
-                    .Sum(o => o.Total);
+                var rolesResult = userRoles
+                    .Select(roleName =>
+                        Enum.TryParse<UserRoleEnum>(roleName, out var parsed) ? (UserRoleEnum?)parsed : null)
+                    .Where(parsed => parsed.HasValue)
+                    .Select(parsed => parsed.Value)
+                    .ToList();
 
                 adminUsers.Add(new AdminUserDto
                 {
                     Id = user.AspNetUserId,
-                    Email = identityUser.Email!,
+                    Email = user.AspNetUser.Email,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     IsBlocked = user.IsBlocked,
-                    EmailConfirmed = identityUser.EmailConfirmed,
-                    LockoutEnabled = identityUser.LockoutEnabled,
-                    LockoutEnd = identityUser.LockoutEnd?.DateTime,
-                    AccessFailedCount = identityUser.AccessFailedCount,
-                    TotalOrders = totalOrders,
-                    TotalSpent = totalSpent,
+                    EmailConfirmed = user.AspNetUser.EmailConfirmed,
                     CreatedAt = user.CreatedAt,
-                    Roles = userRoles.ToList()
+                    Roles = rolesResult
                 });
             }
 
@@ -175,10 +169,13 @@ namespace ShoeStore.Services
 
             var userRoles = await _userManager.GetRolesAsync(user);
 
-            var totalOrders = await _context.Orders.CountAsync(o => o.UserId == userId);
-            var totalSpent = await _context.Orders
-                .Where(o => o.UserId == userId && (OrderStatusEnum)o.OrderStatus == OrderStatusEnum.Delivered)
-                .SumAsync(o => o.Total);
+            var rolesResult = userRoles
+                .Select(roleName =>
+                    Enum.TryParse<UserRoleEnum>(roleName, out var parsed) ? (UserRoleEnum?)parsed : null)
+                .Where(parsed => parsed.HasValue)
+                .Select(parsed => parsed.Value)
+                .ToList();
+
 
             return new AdminUserDto
             {
@@ -187,12 +184,7 @@ namespace ShoeStore.Services
                 FirstName = userDetail?.FirstName,
                 LastName = userDetail?.LastName,
                 EmailConfirmed = user.EmailConfirmed,
-                LockoutEnabled = user.LockoutEnabled,
-                LockoutEnd = user.LockoutEnd?.DateTime,
-                AccessFailedCount = user.AccessFailedCount,
-                TotalOrders = totalOrders,
-                TotalSpent = totalSpent,
-                Roles = userRoles.ToList(),
+                Roles = rolesResult,
                 IsBlocked = userDetail.IsBlocked,
                 CreatedAt = userDetail.CreatedAt,
             };
@@ -232,7 +224,7 @@ namespace ShoeStore.Services
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded) return false;
 
-            if (request.Roles.Any())
+            if (request.Roles != null && request.Roles.Any())
             {
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
@@ -274,7 +266,7 @@ namespace ShoeStore.Services
         }
 
 
-        public async Task<AdminOrdersListDto> GetUserOrdersAsync(GetAdminUserOrdersRequestDto request)
+        public async Task<AdminOrdersListDto> GetUserOrdersAsync(string userId, GetUserOrdersRequestDto request)
         {
             var query = _context.Orders
                 .Include(o => o.ShippingAddress)
@@ -286,7 +278,7 @@ namespace ShoeStore.Services
                     .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.UserDetail)
                     .ThenInclude(u => u.AspNetUser)
-                .Where(o => o.UserId == request.UserId)
+                .Where(o => o.UserId == userId)
                 .AsQueryable();
 
             if (request.StatusFilter != null)
@@ -316,9 +308,9 @@ namespace ShoeStore.Services
 
             var adminOrders = new List<AdminOrderDto>();
 
-            var user = await _userManager.FindByIdAsync(request.UserId);
+            var user = await _userManager.FindByIdAsync(userId);
             var userDetail = await _context.UserDetails
-                .FirstOrDefaultAsync(ud => ud.AspNetUserId == request.UserId);
+                .FirstOrDefaultAsync(ud => ud.AspNetUserId == userId);
 
             foreach (var order in orders)
             {
@@ -336,7 +328,7 @@ namespace ShoeStore.Services
                 {
                     Id = order.Payment.Id,
                     PaymentMethod = order.Payment.PaymentMethod.DisplayName,
-                    PaymentStatus = (PaymentStatusEnum)order.Payment.PaymentStatus,
+                    Status = (PaymentStatusEnum)order.Payment.PaymentStatus,
                     Amount = order.Payment.Amount,
                     TransactionId = order.Payment.TransactionId,
                     CreatedAt = order.Payment.CreatedAt

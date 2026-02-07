@@ -42,7 +42,7 @@ namespace ShoeStore.Tests
                 BrandId = 5,
                 BrandName = "Test Brand",
                 Audience = "Test Audience",
-                AudienceId = 1,
+                Audience = 1,
                 ProductSizes = new List<ProductSizeDto>
                 {
                     new ProductSizeDto { Size = 42, Stock = 10, Barcode = "1234567890123" }

@@ -54,13 +54,6 @@ namespace ShoeStore.Dto
     }
 
 
-    public enum UserStatusEnum
-    {
-        Active = 1,
-        Blocked = 2,
-    }
-
-
     public enum UserRoleEnum
     {
         Administrator = 1,

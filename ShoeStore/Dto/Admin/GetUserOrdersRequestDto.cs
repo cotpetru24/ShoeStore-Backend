@@ -1,8 +1,7 @@
 ﻿namespace ShoeStore.Dto.Admin
 {
-    public class GetAdminUserOrdersRequestDto
+    public class GetUserOrdersRequestDto
     {
-        public string UserId { get; set; } = null!;
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public OrderStatusEnum? StatusFilter { get; set; }

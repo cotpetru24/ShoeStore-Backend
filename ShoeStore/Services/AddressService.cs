@@ -22,7 +22,8 @@ namespace ShoeStore.Services
                 AddressLine1 = request.AddressLine1,
                 City = request.City,
                 Postcode = request.Postcode,
-                Country = request.Country
+                Country = request.Country,
+                IsActive = true
             };
 
             _context.UserAddresses.Add(newAddress);

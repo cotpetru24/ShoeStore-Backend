@@ -53,9 +53,9 @@ namespace ShoeStore.Services
                 query = query.Where(p => EF.Functions.ILike(p.Brand.Name, request.ProductBrand));
             }
 
-            if (request.ProductCategory != null)
+            if (request.AudienceId != null)
             {
-                query = query.Where(p => EF.Functions.ILike(p.Audience.DisplayName, request.ProductCategory));
+                query = query.Where(p => p.AudienceId == request.AudienceId);
             }
 
             if (request.ProductStockStatus != null)
@@ -153,8 +153,7 @@ namespace ShoeStore.Services
                     OriginalPrice = product.OriginalPrice,
                     BrandId = product.BrandId,
                     BrandName = product.Brand?.Name,
-                    AudienceId = product.AudienceId,
-                    Audience = product.Audience?.DisplayName,
+                    Audience = product.AudienceId,
                     Rating = product.Rating,
                     ReviewCount = product.ReviewCount,
                     IsNew = product.IsNew,
@@ -255,8 +254,7 @@ namespace ShoeStore.Services
                 OriginalPrice = product.OriginalPrice,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
-                AudienceId = product.AudienceId,
-                Audience = product.Audience?.DisplayName,
+                Audience = product.AudienceId,
                 Rating = product.Rating,
                 ReviewCount = product.ReviewCount,
                 IsNew = product.IsNew,
@@ -288,7 +286,7 @@ namespace ShoeStore.Services
         }
 
 
-        public async Task<AdminProductDto> CreateProductAsync(AdminProductDto productToAdd)
+        public async Task<AdminProductDto> CreateProductAsync(AdminCreateProductRequestDto productToAdd)
         {
             var product = new Product
             {
@@ -345,8 +343,7 @@ namespace ShoeStore.Services
                 OriginalPrice = product.OriginalPrice,
                 BrandId = product.BrandId,
                 BrandName = product.Brand?.Name,
-                AudienceId = product.AudienceId,
-                Audience = product.Audience?.DisplayName,
+                Audience = product.AudienceId,
                 Rating = product.Rating,
                 ReviewCount = product.ReviewCount,
                 IsNew = product.IsNew,
@@ -390,7 +387,7 @@ namespace ShoeStore.Services
             product.DiscountPercentage = productToUpdate.DiscountPercentage;
             product.UpdatedAt = DateTime.UtcNow;
             product.BrandId = productToUpdate.BrandId;
-            product.AudienceId = productToUpdate.AudienceId;
+            product.AudienceId = productToUpdate.Audience;
 
             await _context.ProductFeatures
                 .Where(pf => pf.ProductId == product.Id)
@@ -424,6 +421,7 @@ namespace ShoeStore.Services
                     if (existing != null)
                     {
                         existing.Stock = productSize.Stock;
+                        existing.UkSize = productSize.Size;
                     }
                     else
                     {
