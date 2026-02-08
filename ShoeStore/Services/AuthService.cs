@@ -46,7 +46,13 @@ namespace ShoeStore.Services
                 await _roleManager.CreateAsync(new IdentityRole(_customerRole));
 
             var adminEmail = _configuration["AdminAccount:Email"];
+            var adminPassword = _configuration["AdminAccount:Password"];
             var adminUser = await _userManager.FindByEmailAsync(adminEmail);
+
+            if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+            {
+                return;
+            }
 
             if (adminUser == null)
             {
