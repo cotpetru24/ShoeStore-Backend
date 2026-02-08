@@ -2,12 +2,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY *.sln .
-COPY ShoeStore/*.csproj ShoeStore/
-COPY ShoeStore.DataContext.PostgreSQL/*.csproj ShoeStore.DataContext.PostgreSQL/
-RUN dotnet restore
+# Copy only project files needed for restore
+COPY ShoeStore/ShoeStore.csproj ShoeStore/
+COPY ShoeStore.DataContext.PostgreSQL/ShoeStore.DataContext.PostgreSQL.csproj ShoeStore.DataContext.PostgreSQL/
 
+# Restore ONLY the API project (ignores Tests)
+RUN dotnet restore ShoeStore/ShoeStore.csproj
+
+# Copy everything else
 COPY . .
+
+# Publish API
 RUN dotnet publish ShoeStore/ShoeStore.csproj -c Release -o /app/publish
 
 # Runtime stage
