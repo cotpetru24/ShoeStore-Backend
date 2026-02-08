@@ -107,9 +107,10 @@ namespace ShoeStore
             {
                 options.AddPolicy("FrontEnd", policy =>
                 {
-                    policy.WithOrigins("http://localhost:4200")
-                          .WithHeaders("Content-Type", "Authorization")
-                          .WithMethods("GET", "POST", "PUT", "DELETE")
+                    policy.WithOrigins("http://localhost:4200",
+                        "https://eshop-management.netlify.app")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
                           .AllowCredentials();
                 });
             });
